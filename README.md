@@ -75,3 +75,19 @@ Diseñamos una arquitectura basada en microservicios, pensada para escalar desde
 cd agtech-dashboard
 npm install
 npm run dev
+```
+
+### 2. Iniciar el Microservicio de Visión (Python)
+```bash
+cd vision-api
+python -m venv venv
+source venv/bin/activate  # En Windows: venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+```
+
+### 3. Iniciar el Backend (Spring Boot)
+```bash
+cd core-backend
+mvn spring-boot:run
+```
