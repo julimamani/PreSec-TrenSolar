@@ -1,0 +1,326 @@
+/* =========================================================
+   Isometric grain flow scene
+   ========================================================= */
+
+.iso-scene {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background:
+    radial-gradient(90% 70% at 52% 42%, rgba(159, 240, 106, 0.075), transparent 62%),
+    radial-gradient(80% 70% at 90% 10%, rgba(94, 234, 212, 0.05), transparent 60%),
+    linear-gradient(180deg, #0b1410, #070d0a);
+  box-shadow:
+    0 40px 90px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+
+.iso-scene::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 36px 36px;
+  content: "";
+  mask-image: radial-gradient(ellipse 90% 80% at 50% 50%, #000 20%, transparent 78%);
+  pointer-events: none;
+}
+
+.iso-scene__hud {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  left: 14px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.iso-scene__eyebrow,
+.iso-scene__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: rgba(7, 12, 9, 0.76);
+  color: var(--muted);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  backdrop-filter: blur(8px);
+}
+
+.iso-scene__badge {
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
+.iso-scene__tilt {
+  padding: 44px 5px 92px;
+  transform-style: preserve-3d;
+  transition: transform 0.18s ease-out;
+  will-change: transform;
+}
+
+.iso-svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.iso-part {
+  transition: filter 0.25s ease;
+}
+
+.iso-part.is-active {
+  filter: drop-shadow(0 0 8px rgba(159, 240, 106, 0.22));
+}
+
+.iso-flow-dash {
+  animation: flowDash 5s linear infinite;
+}
+
+.iso-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: isoPulse 2.8s ease-out infinite;
+}
+
+.spline-frame {
+  display: block;
+  width: 100%;
+  height: 520px;
+  border: 0;
+  background: #070d0a;
+}
+
+/* ---------- Interactive station markers ---------- */
+
+.iso-station {
+  position: absolute;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  transform: translate(-50%, -50%);
+}
+
+.iso-station__ring {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+  opacity: 0;
+  transform: translateY(-50%) scale(1);
+}
+
+.iso-station__dot {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--accent-border);
+  border-radius: 50%;
+  background: rgba(7, 13, 10, 0.92);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 500;
+  box-shadow:
+    0 0 0 4px rgba(7, 13, 10, 0.6),
+    0 4px 12px rgba(0, 0, 0, 0.3);
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.iso-station__label {
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: rgba(7, 13, 10, 0.92);
+  color: var(--text-soft);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+  white-space: nowrap;
+}
+
+.iso-station:hover .iso-station__label,
+.iso-station:focus-visible .iso-station__label,
+.iso-station.is-active .iso-station__label {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.iso-station:hover .iso-station__dot,
+.iso-station.is-active .iso-station__dot {
+  background: var(--accent);
+  color: #071009;
+  transform: scale(1.06);
+}
+
+.iso-station.is-active .iso-station__ring {
+  opacity: 1;
+  animation: stationPing 2s ease-out infinite;
+}
+
+/* ---------- Station detail overlay ---------- */
+
+.iso-detail {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  left: 14px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: rgba(7, 12, 9, 0.84);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(12px);
+  pointer-events: none;
+}
+
+.iso-detail__icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--accent-border);
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.iso-detail__copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.iso-detail__eyebrow {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.iso-detail__text {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 9.5px;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+}
+
+.iso-detail__metric {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-soft);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+@keyframes flowDash {
+  to {
+    stroke-dashoffset: -60;
+  }
+}
+
+@keyframes isoPulse {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.9);
+  }
+  70% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+@keyframes stationPing {
+  0% {
+    opacity: 0.8;
+    transform: translateY(-50%) scale(1);
+  }
+  75% {
+    opacity: 0;
+    transform: translateY(-50%) scale(1.8);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-50%) scale(1.8);
+  }
+}
+
+@media (max-width: 700px) {
+  .iso-scene {
+    border-radius: 15px;
+  }
+
+  .iso-scene__tilt {
+    padding: 40px 0 88px;
+  }
+
+  .iso-scene__badge {
+    display: none;
+  }
+
+  .iso-detail__text {
+    display: none;
+  }
+
+  .iso-detail {
+    gap: 8px;
+    padding: 8px 9px;
+  }
+
+  .iso-detail__metric {
+    font-size: 8.5px;
+  }
+
+  .iso-station__label {
+    display: none;
+  }
+
+  .spline-frame {
+    height: 380px;
+  }
+}
