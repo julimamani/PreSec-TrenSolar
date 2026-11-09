@@ -1,11 +1,7 @@
 # 🌾 AgTech Vision | Tipificación Inteligente de Legumbres
 
 <div align="center">
-  <img src="https://shields.io" alt="React" />
-  <img src="https://shields.io" alt="TypeScript" />
-  <img src="https://shields.io" alt="Python" />
-  <img src="https://shields.io" alt="Spring Boot" />
-  <img src="https://shields.io" alt="PostgreSQL" />
+  [![My Skills](https://skillicons.dev/icons?i=ts,html,css,react)](https://skillicons.dev)
 </div>
 
 <br>
