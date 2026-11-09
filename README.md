@@ -1,8 +1,11 @@
 # 🌾 AgTech Vision | Tipificación Inteligente de Legumbres
 
-<div align="center">
-  [![My Skills](https://skillicons.dev/icons?i=ts,html,css,react)](https://skillicons.dev)
-</div>
+<p align="center">
+  <a href="https://skillicons.dev">
+    <img src="https://skillicons.dev/icons?i=git,react,ts,py,tailwind,postgres,spring" />
+  </a>
+</p>
+
 
 <br>
 
