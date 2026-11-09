@@ -40,9 +40,8 @@ const CURRENCY_OPTIONS = [
 
 const VENUE_OPTIONS: Array<{ value: 'all' | MarketVenueId; label: string }> = [
   { value: 'all', label: 'Todas' },
-  { value: 'rosario', label: 'BCR' },
-  { value: 'buenos-aires', label: 'BCBA' },
-  { value: 'cbot', label: 'CBOT' },
+  { value: 'global', label: 'Matba Rofex' },
+  { value: 'rosario', label: 'Spot regional' },
 ]
 
 export function MarketPage() {
@@ -161,6 +160,13 @@ export function MarketPage() {
         </div>
       )}
 
+      {data.metadata?.stale && (
+        <div className="alert alert--danger" role="alert">
+          <CircleAlert size={16} />
+          <span>La fuente no respondió; se muestra la última copia disponible.</span>
+        </div>
+      )}
+
       <div className="market-strip">
         <div className="market-strip__item">
           <span>Índice granos</span>
@@ -178,13 +184,13 @@ export function MarketPage() {
           <span className="market-strip__muted">posiciones abiertas</span>
         </div>
         <div className="market-strip__item">
-          <span>Dólar BNA</span>
+          <span>Dólar mayorista</span>
           <strong className="mono">$ {formatNumber(data.usdArs, 2)}</strong>
-          <span className="market-strip__muted">referencia minorista</span>
+          <span className="market-strip__muted">DolarAPI</span>
         </div>
         <span className="market-strip__live">
           <span className="status-dot status-dot--ok" />
-          Mercado abierto
+          Pizarra vigente
         </span>
       </div>
 
@@ -247,7 +253,13 @@ export function MarketPage() {
             subtitle="Últimas 9 ruedas"
             action={<Badge tone="neutral">toneladas</Badge>}
           />
-          <VolumeChart data={data.volumeSeries} height={260} />
+          {data.volumeSeries.length > 0 ? (
+            <VolumeChart data={data.volumeSeries} height={260} />
+          ) : (
+            <div className="table-empty">
+              <span>Matba Rofex no entrega volumen operado en esta integración.</span>
+            </div>
+          )}
           <ChartLegend
             items={[
               { label: 'Soja', color: GRAINS.soja.color },
@@ -265,7 +277,13 @@ export function MarketPage() {
             subtitle="vs. Rosario"
             action={<Badge tone="neutral">US$/t</Badge>}
           />
-          <BasisChart data={data.regions} height={260} />
+          {data.regions.length > 0 ? (
+            <BasisChart data={data.regions} height={260} />
+          ) : (
+            <div className="table-empty">
+              <span>El basis regional no está disponible en la fuente actual.</span>
+            </div>
+          )}
         </Card>
       </div>
 
@@ -323,10 +341,9 @@ export function MarketPage() {
         <div className="market-table-panel__foot">
           <span>
             <ArrowUpRight size={13} />
-            {MARKET_VENUES.rosario.name} · {MARKET_VENUES['buenos-aires'].name} ·{' '}
-            {MARKET_VENUES.cbot.name}
+            {MARKET_VENUES.global.name} · {MARKET_VENUES.rosario.name}
           </span>
-          <span>Datos demo en tiempo real simulado</span>
+          <span>Matba Rofex · DolarAPI · Spot regional</span>
         </div>
       </Card>
     </div>

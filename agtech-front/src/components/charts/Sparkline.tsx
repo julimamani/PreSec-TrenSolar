@@ -18,7 +18,20 @@ export function Sparkline({
 }: SparklineProps) {
   const gradientId = `spark-${useId().replace(/:/g, '')}`
 
-  if (data.length < 2) return null
+  if (data.length === 0) return null
+
+  if (data.length === 1) {
+    return (
+      <svg
+        className={cn('sparkline', className)}
+        viewBox={`0 0 ${width} ${height}`}
+        preserveAspectRatio="none"
+        aria-hidden="true"
+      >
+        <circle cx={width / 2} cy={height / 2} r="2.3" fill={color} />
+      </svg>
+    )
+  }
 
   const min = Math.min(...data)
   const max = Math.max(...data)

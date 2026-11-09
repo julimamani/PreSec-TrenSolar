@@ -3,6 +3,7 @@ package com.app.backend.web;
 import com.app.backend.exception.ConflictException;
 import com.app.backend.exception.FileStorageException;
 import com.app.backend.exception.InvalidFileException;
+import com.app.backend.exception.MarketDataException;
 import com.app.backend.exception.ResourceNotFoundException;
 import com.app.backend.exception.VisionAiException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -98,6 +99,16 @@ public class ApiExceptionHandler {
                 "The vision AI service is unavailable or returned an invalid response"
         );
         problem.setTitle("Vision AI error");
+        return problem;
+    }
+
+    @ExceptionHandler(MarketDataException.class)
+    public ProblemDetail handleMarketData(MarketDataException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_GATEWAY,
+                "The market data provider is unavailable or returned an invalid response"
+        );
+        problem.setTitle("Market data error");
         return problem;
     }
 }

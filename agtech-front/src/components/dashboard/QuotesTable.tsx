@@ -56,7 +56,7 @@ export function QuotesTable({ quotes, series, showVenue = true }: QuotesTablePro
                   {quote.changePct >= 0 ? '▲' : '▼'} {formatNumber(Math.abs(quote.changePct), 2)}%
                 </td>
                 <td className="is-right mono">
-                  {quote.venue === 'cbot' ? (
+                  {quote.basisUsd === 0 ? (
                     <span className="muted">—</span>
                   ) : (
                     <span className={quote.basisUsd >= 0 ? 'text-up' : 'text-down'}>
@@ -81,7 +81,7 @@ export function QuotesTable({ quotes, series, showVenue = true }: QuotesTablePro
         </tbody>
       </table>
       <div className="table-footnote">
-        <span>Pizarras en US$/t · actualización cada 5 minutos</span>
+        <span>Pizarras en US$/t · Matba Rofex · DolarAPI · actualización cada 15 minutos</span>
         <Link to="/mercado">
           Ver mercado completo
           <ArrowUpRight size={13} />
