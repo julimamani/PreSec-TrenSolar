@@ -1,4 +1,4 @@
-# 🌾 AgTech Vision | Tipificación Inteligente de Legumbres
+# 🌾AgTech Vision | PURO GRANO | Análisis Inteligente de granos
 
 <p align="center">
   <a href="https://skillicons.dev">
@@ -9,9 +9,9 @@
 
 <br>
 
-> **Transformando imágenes en decisiones financieras para el agro del NOA en milisegundos.**
+> **Transformando imágenes en decisiones financieras para el agro del NOA y de Argentina en milisegundos.**
 > 
-> *Proyecto desarrollado para el Hackathon TecnoProductivo Jujuy 2026.*
+> *Proyecto desarrollado para el Hackathon Tren Solar Jujuy 2026.*
 
 ---
 
