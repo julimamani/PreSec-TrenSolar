@@ -95,7 +95,7 @@ export function DashboardPage() {
     )
   }
 
-  const localQuotes = data.quotes.filter((quote) => quote.venue !== 'cbot')
+  const localQuotes = data.quotes
   const kpiQuotes = data.quotes.slice(0, 4)
   const qualityData = lastAnalysis?.qualityAxes ?? data.qualityProfile
 
@@ -144,6 +144,13 @@ export function DashboardPage() {
         </div>
       )}
 
+      {data.metadata?.stale && (
+        <div className="alert alert--danger" role="alert">
+          <CircleAlert size={16} />
+          <span>La fuente no respondió; se muestra la última copia disponible.</span>
+        </div>
+      )}
+
       <div className="market-strip">
         <div className="market-strip__item">
           <span>Índice granos</span>
@@ -151,9 +158,9 @@ export function DashboardPage() {
           <DeltaBadge value={data.indexChangePct} />
         </div>
         <div className="market-strip__item">
-          <span>Dólar BNA</span>
+          <span>Dólar mayorista</span>
           <strong className="mono">$ {formatNumber(data.usdArs, 2)}</strong>
-          <span className="market-strip__muted">ref. minorista</span>
+          <span className="market-strip__muted">DolarAPI</span>
         </div>
         <div className="market-strip__item">
           <span>Volumen rueda</span>
@@ -167,7 +174,7 @@ export function DashboardPage() {
         </div>
         <span className="market-strip__live">
           <span className="status-dot status-dot--ok" />
-          Mercado abierto
+          Pizarra vigente
         </span>
       </div>
 
@@ -194,20 +201,18 @@ export function DashboardPage() {
           />
           <div className="chart-toolbar">
             <div className="series-toggle" aria-label="Granos visibles">
-              {(Object.keys(GRAINS) as GrainId[])
-                .filter((grain) => ['soja', 'maiz', 'trigo', 'poroto'].includes(grain))
-                .map((grain) => (
-                  <button
-                    key={grain}
-                    type="button"
-                    className={`series-toggle__item${grains.includes(grain) ? ' is-active' : ''}`}
-                    aria-pressed={grains.includes(grain)}
-                    onClick={() => toggleGrain(grain)}
-                  >
-                    <span style={{ backgroundColor: GRAINS[grain].color }} />
-                    {GRAINS[grain].name}
-                  </button>
-                ))}
+              {(Object.keys(GRAINS) as GrainId[]).map((grain) => (
+                <button
+                  key={grain}
+                  type="button"
+                  className={`series-toggle__item${grains.includes(grain) ? ' is-active' : ''}`}
+                  aria-pressed={grains.includes(grain)}
+                  onClick={() => toggleGrain(grain)}
+                >
+                  <span style={{ backgroundColor: GRAINS[grain].color }} />
+                  {GRAINS[grain].name}
+                </button>
+              ))}
             </div>
             <SegmentedControl
               options={CURRENCY_OPTIONS}
@@ -289,7 +294,13 @@ export function DashboardPage() {
             subtitle="Últimas 9 ruedas"
             action={<Badge tone="neutral">toneladas</Badge>}
           />
-          <VolumeChart data={data.volumeSeries} height={238} />
+          {data.volumeSeries.length > 0 ? (
+            <VolumeChart data={data.volumeSeries} height={238} />
+          ) : (
+            <div className="table-empty">
+              <span>Matba Rofex no entrega volumen operado en esta integración.</span>
+            </div>
+          )}
           <ChartLegend
             items={[
               { label: 'Soja', color: GRAINS.soja.color },
@@ -323,7 +334,7 @@ export function DashboardPage() {
           <PanelHeader
             eyebrow="Pizarras argentinas"
             title="Mercado de referencia"
-            action={<Badge tone="accent" dot>6 granos</Badge>}
+            action={<Badge tone="accent" dot>4 granos</Badge>}
           />
           <QuotesTable quotes={localQuotes} series={data.series} />
         </Card>
@@ -337,7 +348,13 @@ export function DashboardPage() {
               subtitle="vs. Rosario"
               action={<Badge tone="neutral">US$/t</Badge>}
             />
-            <BasisChart data={data.regions} height={236} />
+            {data.regions.length > 0 ? (
+              <BasisChart data={data.regions} height={236} />
+            ) : (
+              <div className="table-empty">
+                <span>El basis regional no está disponible en la fuente actual.</span>
+              </div>
+            )}
           </Card>
         </div>
       </div>

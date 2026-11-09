@@ -28,8 +28,9 @@ import { Badge } from '../components/ui/Badge'
 import { buttonClass } from '../components/ui/Button'
 import { Card, PanelHeader } from '../components/ui/Card'
 import { SegmentedControl } from '../components/ui/SegmentedControl'
-import { GRAINS, MARKET_SNAPSHOT } from '../data/marketData'
+import { GRAINS } from '../data/marketData'
 import { useAnalysis } from '../hooks/useAnalysis'
+import { useMarketData } from '../hooks/useMarketData'
 import { formatNumber, formatTons, formatUsd } from '../lib/format'
 import type { PriceRange } from '../types/market'
 
@@ -77,7 +78,7 @@ const FEATURES = [
     eyebrow: 'Market intelligence',
     title: 'Pizarras conectadas al resultado',
     description:
-      'Cada muestra se compara con Rosario, Buenos Aires y Chicago para estimar una prima de calidad actualizada.',
+      'Cada muestra se compara con Matba Rofex y el spot regional de poroto para estimar una prima de calidad actualizada.',
   },
   {
     icon: ShieldCheck,
@@ -99,6 +100,7 @@ const PREVIEW_GRAINS = ['soja', 'maiz', 'trigo'] as const
 
 export function LandingPage() {
   const analysis = useAnalysis()
+  const { data: market } = useMarketData()
   const [uploaderKey, setUploaderKey] = useState(0)
   const [previewRange, setPreviewRange] = useState<PriceRange>('30D')
   const resultRef = useRef<HTMLDivElement>(null)
@@ -118,8 +120,11 @@ export function LandingPage() {
   }
 
   const previewCount = previewRange === '7D' ? 7 : previewRange === '30D' ? 30 : 90
-  const previewData = MARKET_SNAPSHOT.series.slice(-previewCount)
-  const previewQuotes = MARKET_SNAPSHOT.quotes.filter((quote) => quote.venue !== 'cbot').slice(0, 4)
+  const previewData = market?.series.slice(-previewCount) ?? []
+  const previewQuotes = market?.quotes.slice(0, 4) ?? []
+  const heroQuote = market?.quotes.find((quote) => quote.grain === 'soja')
+  const heroVenue =
+    heroQuote?.venue === 'rosario' ? 'Spot regional' : 'Matba Rofex'
 
   return (
     <div className="landing">
@@ -182,9 +187,18 @@ export function LandingPage() {
             <div className="hero__visual">
               <GrainFlowScene />
               <span className="hero__float hero__float--price">
-                <span className="hero__float-label">Soja Rosario</span>
-                <strong className="mono">US$ 318,5</strong>
-                <span className="text-up">▲ 1,82%</span>
+                <span className="hero__float-label">Soja {heroVenue}</span>
+                <strong className="mono">
+                  {heroQuote ? formatUsd(heroQuote.priceUsd, 1) : '—'}
+                </strong>
+                <span className={heroQuote && heroQuote.changePct < 0 ? 'text-down' : 'text-up'}>
+                  {heroQuote
+                    ? `${heroQuote.changePct >= 0 ? '▲' : '▼'} ${formatNumber(
+                        Math.abs(heroQuote.changePct),
+                        2,
+                      )}%`
+                    : 'sin datos'}
+                </span>
               </span>
               <span className="hero__float hero__float--quality">
                 <span className="status-dot status-dot--ok" />
@@ -353,11 +367,11 @@ export function LandingPage() {
                   data={previewData}
                   grains={[...PREVIEW_GRAINS]}
                   currency="USD"
-                  usdArs={MARKET_SNAPSHOT.usdArs}
+                  usdArs={market?.usdArs ?? 0}
                   height={300}
                 />
                 <div className="chart-foot">
-                  <span>Datos demo · actualización simulada</span>
+                  <span>Matba Rofex · DolarAPI · Spot regional</span>
                   <Link to="/dashboard" className="link-arrow">
                     Abrir dashboard
                     <ArrowUpRight size={13} />
@@ -368,14 +382,16 @@ export function LandingPage() {
               <div className="landing-quotes">
                 {previewQuotes.map((quote) => {
                   const grain = GRAINS[quote.grain]
-                  const spark = MARKET_SNAPSHOT.series.slice(-14).map((point) => point[quote.grain])
+                  const spark = (market?.series ?? [])
+                    .slice(-14)
+                    .map((point) => point[quote.grain])
                   return (
                     <article className="landing-quote" key={quote.id}>
                       <span className="landing-quote__dot" style={{ backgroundColor: grain.color }} />
                       <div className="landing-quote__main">
                         <span>
                           <strong>{grain.name}</strong>
-                          <small>{quote.venue === 'rosario' ? 'Rosario' : 'Buenos Aires'}</small>
+                          <small>{quote.venue === 'rosario' ? 'Spot regional' : 'Matba Rofex'}</small>
                         </span>
                         <strong className="mono">{formatUsd(quote.priceUsd, 1)}</strong>
                       </div>
@@ -445,7 +461,7 @@ export function LandingPage() {
             <p>Grain intelligence para la cadena agroindustrial argentina.</p>
             <span className="landing-footer__badge">
               <span className="status-dot status-dot--ok" />
-              MVP demo · datos simulados
+              MVP demo · mercado conectado
             </span>
           </div>
           <div className="landing-footer__col">
@@ -475,7 +491,7 @@ export function LandingPage() {
         </div>
         <div className="container landing-footer__bottom">
           <span>© 2026 PuroGrano · PreSec AgTech</span>
-          <span>Los datos de mercado son demostrativos y no constituyen asesoramiento financiero.</span>
+          <span>Precios de referencia de Matba Rofex y DolarAPI; no constituyen asesoramiento financiero.</span>
         </div>
       </footer>
     </div>

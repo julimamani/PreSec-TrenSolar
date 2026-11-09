@@ -11,7 +11,8 @@ import {
   X,
 } from 'lucide-react'
 import { API_RUNTIME, validateImage } from '../../api/analysisApi'
-import { GRAINS, ANALYSIS_GRAINS, MARKET_SNAPSHOT } from '../../data/marketData'
+import { GRAINS, ANALYSIS_GRAINS } from '../../data/marketData'
+import { useMarketData } from '../../hooks/useMarketData'
 import { cn, formatUsd } from '../../lib/format'
 import type { GrainType } from '../../types/analysis'
 import { Badge } from '../ui/Badge'
@@ -42,6 +43,7 @@ export function AnalysisUploader({
   onReset,
   compact = false,
 }: AnalysisUploaderProps) {
+  const { data: market } = useMarketData()
   const inputId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<File | null>(null)
@@ -87,8 +89,7 @@ export function AnalysisUploader({
   const displayError = localError ?? error
   const displayPreview = previewUrl ?? localPreview
   const selectedGrain = GRAINS[grain]
-  const pizarra =
-    MARKET_SNAPSHOT.quotes.find((quote) => quote.grain === grain)?.priceUsd ?? 0
+  const pizarra = market?.quotes.find((quote) => quote.grain === grain)?.priceUsd
 
   return (
     <div className={cn('uploader', compact && 'uploader--compact')}>
@@ -209,7 +210,7 @@ export function AnalysisUploader({
           <div className="uploader__reference">
             <span className="field__label">Pizarra actual</span>
             <span className="uploader__reference-value mono">
-              {formatUsd(pizarra, 1)}
+              {pizarra ? formatUsd(pizarra, 1) : '—'}
               <small>/t</small>
             </span>
           </div>

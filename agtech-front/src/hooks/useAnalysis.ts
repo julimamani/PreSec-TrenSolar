@@ -4,6 +4,7 @@ import {
   saveAnalysisResult as saveAnalysisToBackend,
   validateImage,
 } from '../api/analysisApi'
+import { useMarketData } from './useMarketData'
 import { saveAnalysisResult as persistAnalysisResult } from '../lib/storage'
 import type {
   AnalysisResult,
@@ -33,6 +34,7 @@ function stageForProgress(progress: number): { status: AnalysisStatus; stage: st
 }
 
 export function useAnalysis() {
+  const { data: market } = useMarketData()
   const [state, setState] = useState<AnalysisUiState>(initialState)
   const previewRef = useRef<string | null>(null)
   const controllerRef = useRef<AbortController | null>(null)
@@ -103,7 +105,11 @@ export function useAnalysis() {
       }, 170)
 
       try {
-        const result = await analyzeSample({ file, grain, variety }, controller.signal)
+        const result = await analyzeSample(
+          { file, grain, variety },
+          controller.signal,
+          market?.quotes ?? [],
+        )
         window.clearInterval(timer)
 
         if (!mountedRef.current || controller.signal.aborted) return null
@@ -138,7 +144,7 @@ export function useAnalysis() {
         return null
       }
     },
-    [revokePreview],
+    [market, revokePreview],
   )
 
   const save = useCallback(async () => {

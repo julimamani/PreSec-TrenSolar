@@ -1,4 +1,4 @@
-import { GRAINS, MARKET_SNAPSHOT } from '../data/marketData'
+import { GRAINS } from '../data/marketData'
 import type {
   AnalysisRequest,
   AnalysisResult,
@@ -8,7 +8,7 @@ import type {
   QualityAxisPoint,
   QualityGrade,
 } from '../types/analysis'
-import type { MarketVenueId } from '../types/market'
+import type { MarketVenueId, Quote } from '../types/market'
 
 const ANALYSIS_API_URL =
   import.meta.env.VITE_ANALYSIS_API_URL ?? 'http://localhost:8000'
@@ -49,10 +49,17 @@ interface GrainProfile {
   radar: Array<{ axis: string; base: number; benchmark: number }>
 }
 
+const FALLBACK_PRICES: Record<GrainType, number> = {
+  soja: 450,
+  maiz: 200,
+  trigo: 220,
+  poroto: 1250,
+}
+
 const GRAIN_PROFILES: Record<GrainType, GrainProfile> = {
   soja: {
     defaultVariety: 'DM 46R18',
-    venue: 'rosario',
+    venue: 'global',
     defects: [
       { id: 'quebrado', label: 'Grano quebrado', base: 2.1 },
       { id: 'danado', label: 'Daño mecánico', base: 1.4 },
@@ -78,7 +85,7 @@ const GRAIN_PROFILES: Record<GrainType, GrainProfile> = {
   },
   maiz: {
     defaultVariety: 'DK 72-27',
-    venue: 'rosario',
+    venue: 'global',
     defects: [
       { id: 'quebrado', label: 'Grano quebrado', base: 3.2 },
       { id: 'danado', label: 'Daño mecánico', base: 1.8 },
@@ -104,7 +111,7 @@ const GRAIN_PROFILES: Record<GrainType, GrainProfile> = {
   },
   trigo: {
     defaultVariety: 'Baguette 620',
-    venue: 'buenos-aires',
+    venue: 'global',
     defects: [
       { id: 'quebrado', label: 'Grano quebrado', base: 1.5 },
       { id: 'danado', label: 'Daño mecánico', base: 1.0 },
@@ -216,7 +223,11 @@ function attributeStatus(
   return 'alert'
 }
 
-function buildMockResult(request: AnalysisRequest): AnalysisResult {
+function venueName(venue: MarketVenueId): string {
+  return venue === 'rosario' ? 'Spot regional' : 'Matba Rofex'
+}
+
+function buildMockResult(request: AnalysisRequest, quotes: Quote[] = []): AnalysisResult {
   const profile = GRAIN_PROFILES[request.grain]
   const seedSource = `${request.file.name}-${request.file.size}-${request.grain}`
   let seed = 2166136261
@@ -249,15 +260,16 @@ function buildMockResult(request: AnalysisRequest): AnalysisResult {
   const grade = gradeFromExport(exportPercentage)
   const confidence = round(95.2 + random() * 3.4, 1)
   const createdAt = new Date()
-  const quote =
-    MARKET_SNAPSHOT.quotes.find(
-      (item) => item.grain === request.grain && item.venue === profile.venue,
-    ) ?? MARKET_SNAPSHOT.quotes[0]
+  const quote = quotes.find((item) => item.grain === request.grain)
+  const pizarraUsd =
+    quote && quote.priceUsd > 0 ? quote.priceUsd : FALLBACK_PRICES[request.grain]
+  const venue = quote?.venue ?? profile.venue
+  const referenceDate = quote?.updatedAt ?? createdAt.toISOString()
 
   const valuationFactor = 0.75 + (exportPercentage / 100) * 0.32
-  const estimatedUsd = round(quote.priceUsd * valuationFactor, 1)
-  const premiumUsd = round(estimatedUsd - quote.priceUsd, 1)
-  const premiumPct = round((premiumUsd / quote.priceUsd) * 100, 2)
+  const estimatedUsd = round(pizarraUsd * valuationFactor, 1)
+  const premiumUsd = round(estimatedUsd - pizarraUsd, 1)
+  const premiumPct = round((premiumUsd / pizarraUsd) * 100, 2)
 
   const attributes: QualityAttribute[] = profile.attributes.map((attribute) => {
     const value = round(
@@ -297,14 +309,13 @@ function buildMockResult(request: AnalysisRequest): AnalysisResult {
     attributes,
     qualityAxes,
     valuation: {
-      venue: profile.venue,
-      venueName:
-        profile.venue === 'rosario' ? 'Bolsa de Rosario' : 'Bolsa de Buenos Aires',
-      pizarraUsd: quote.priceUsd,
+      venue,
+      venueName: venueName(venue),
+      pizarraUsd,
       estimatedUsd,
       premiumUsd,
       premiumPct,
-      referenceDate: quote.updatedAt,
+      referenceDate,
     },
     processingMs: Math.round(2400 + random() * 1100),
     modelVersion: 'grain-vision v1.4',
@@ -314,10 +325,11 @@ function buildMockResult(request: AnalysisRequest): AnalysisResult {
 export async function analyzeSample(
   request: AnalysisRequest,
   signal?: AbortSignal,
+  quotes: Quote[] = [],
 ): Promise<AnalysisResult> {
   if (USE_MOCK) {
     await sleep(2600, signal)
-    return buildMockResult(request)
+    return buildMockResult(request, quotes)
   }
 
   const body = new FormData()

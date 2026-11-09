@@ -1,11 +1,28 @@
-import { MARKET_SNAPSHOT } from '../data/marketData'
+import axios from 'axios'
 import type { MarketSnapshot } from '../types/market'
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => window.setTimeout(resolve, ms))
+const MARKET_API_URL =
+  import.meta.env.VITE_MARKET_API_URL ?? 'http://localhost:8081/api/market-snapshot'
+const CLIENT_CACHE_TTL_MS = 30_000
+
+let cachedSnapshot: { data: MarketSnapshot; fetchedAt: number } | null = null
+
+export async function fetchMarketSnapshot(force = false): Promise<MarketSnapshot> {
+  if (
+    !force &&
+    cachedSnapshot &&
+    Date.now() - cachedSnapshot.fetchedAt < CLIENT_CACHE_TTL_MS
+  ) {
+    return cachedSnapshot.data
+  }
+
+  const { data } = await axios.get<MarketSnapshot>(MARKET_API_URL, {
+    timeout: 20_000,
+  })
+  cachedSnapshot = { data, fetchedAt: Date.now() }
+  return data
 }
 
-export async function fetchMarketSnapshot(): Promise<MarketSnapshot> {
-  await sleep(420)
-  return MARKET_SNAPSHOT
+export function invalidateMarketSnapshot() {
+  cachedSnapshot = null
 }

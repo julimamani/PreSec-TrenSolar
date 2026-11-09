@@ -7,11 +7,11 @@ export function useMarketData() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const load = useCallback(async (showSkeleton = false) => {
+  const load = useCallback(async (showSkeleton = false, force = false) => {
     if (showSkeleton) setIsLoading(true)
     setError(null)
     try {
-      const snapshot = await fetchMarketSnapshot()
+      const snapshot = await fetchMarketSnapshot(force)
       setData(snapshot)
     } catch (requestError) {
       setError(
@@ -32,6 +32,6 @@ export function useMarketData() {
     data,
     isLoading,
     error,
-    refetch: () => load(true),
+    refetch: () => load(true, true),
   }
 }

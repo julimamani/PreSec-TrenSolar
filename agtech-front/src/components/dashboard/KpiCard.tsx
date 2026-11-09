@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { GRAINS } from '../../data/marketData'
+import { GRAINS, MARKET_VENUES } from '../../data/marketData'
 import { formatPercent, formatTons, formatUsd } from '../../lib/format'
 import type { PricePoint, Quote } from '../../types/market'
 import { Sparkline } from '../charts/Sparkline'
@@ -13,6 +13,7 @@ export function KpiCard({
   series: PricePoint[]
 }) {
   const grain = GRAINS[quote.grain]
+  const venue = MARKET_VENUES[quote.venue]
   const sparkData = series.slice(-16).map((point) => point[quote.grain])
   const color = quote.changePct >= 0 ? grain.color : 'var(--danger)'
 
@@ -23,10 +24,10 @@ export function KpiCard({
           <span className="kpi-card__dot" style={{ backgroundColor: grain.color }} />
           <span>
             <strong>{grain.name}</strong>
-            <small>{grain.short} · Rosario</small>
+            <small>{grain.short} · {venue.name}</small>
           </span>
         </span>
-        <Badge tone="neutral" className="kpi-card__venue">BCR</Badge>
+        <Badge tone="neutral" className="kpi-card__venue">{venue.code}</Badge>
       </div>
 
       <div className="kpi-card__value mono">
@@ -49,10 +50,15 @@ export function KpiCard({
         height={38}
       />
       <span className="kpi-card__basis">
-        Basis <strong className="mono">
-          {quote.basisUsd >= 0 ? '+' : '−'}
-          {formatPercent(Math.abs(quote.basisUsd), 1).replace('%', '')} US$
-        </strong>
+        Basis{' '}
+        {quote.basisUsd === 0 ? (
+          <strong className="mono muted">—</strong>
+        ) : (
+          <strong className="mono">
+            {quote.basisUsd >= 0 ? '+' : '−'}
+            {formatPercent(Math.abs(quote.basisUsd), 1).replace('%', '')} US$
+          </strong>
+        )}
       </span>
     </article>
   )

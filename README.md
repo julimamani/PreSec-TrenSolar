@@ -1,18 +1,17 @@
-# 🌾 AgTech Vision | Tipificación Inteligente de Legumbres
+# 🌾AgTech Vision | PURO GRANO | Análisis Inteligente de granos
 
-<div align="center">
-  <img src="https://raw.githubusercontent.com/tandpfun/skill-icons/65dea6c4eaca7da319e552c09f485c708a580061/icons/React-Dark.svg" width="40" alt="React" />
-  <img src="https://raw.githubusercontent.com/tandpfun/skill-icons/65dea6c4eaca7da319e552c09f485c708a580061/icons/TypeScript.svg" width="40" alt="TypeScript" />
-  <img src="https://raw.githubusercontent.com/tandpfun/skill-icons/65dea6c4eaca7da319e552c09f485c708a580061/icons/Python-Dark.svg" width="40" alt="Python" />
-  <img src="https://raw.githubusercontent.com/tandpfun/skill-icons/65dea6c4eaca7da319e552c09f485c708a580061/icons/Spring-Dark.svg" width="40" alt="Spring Boot" />
-  <img src="https://raw.githubusercontent.com/tandpfun/skill-icons/65dea6c4eaca7da319e552c09f485c708a580061/icons/PostgreSQL-Dark.svg" width="40" alt="PostgreSQL" />
-</div>
+<p align="center">
+  <a href="https://skillicons.dev">
+    <img src="https://skillicons.dev/icons?i=git,react,ts,py,tailwind,postgres,spring" />
+  </a>
+</p>
+
 
 <br>
 
-> **Transformando imágenes en decisiones financieras para el agro del NOA en milisegundos.**
+> **Transformando imágenes en decisiones financieras para el agro del NOA y de Argentina en milisegundos.**
 > 
-> *Proyecto desarrollado para el Hackathon TecnoProductivo Jujuy 2026.*
+> *Proyecto desarrollado para el Hackathon Tren Solar Jujuy 2026.*
 
 ---
 

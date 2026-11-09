@@ -106,7 +106,7 @@ export function PriceChart({
               stroke={GRAINS[grain].color}
               strokeWidth={2}
               fill={`url(#${prefix}-${grain})`}
-              dot={false}
+              dot={displayData.length === 1 ? { r: 3, strokeWidth: 0 } : false}
               activeDot={{ r: 3.5, strokeWidth: 0 }}
               animationDuration={650}
             />

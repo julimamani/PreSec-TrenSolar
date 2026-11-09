@@ -1,6 +1,6 @@
-export type GrainId = 'soja' | 'maiz' | 'trigo' | 'poroto' | 'sorgo' | 'cebada'
+export type GrainId = 'soja' | 'maiz' | 'trigo' | 'poroto'
 
-export type MarketVenueId = 'rosario' | 'buenos-aires' | 'cbot'
+export type MarketVenueId = 'rosario' | 'global'
 
 export type Currency = 'USD' | 'ARS'
 
@@ -35,6 +35,7 @@ export interface Quote {
   volumeTons: number
   basisUsd: number
   updatedAt: string
+  source?: string
 }
 
 export interface QualityAxis {
@@ -64,6 +65,14 @@ export interface RegionBasis {
   volumeTons: number
 }
 
+export interface MarketMetadata {
+  provider: string
+  attribution: string
+  fetchedAt: string
+  stale: boolean
+  warnings: string[]
+}
+
 export interface MarketSnapshot {
   updatedAt: string
   usdArs: number
@@ -78,4 +87,5 @@ export interface MarketSnapshot {
   regions: RegionBasis[]
   qualityProfile: QualityAxis[]
   qualityVsMarket: QualityVsMarketPoint[]
+  metadata?: MarketMetadata
 }

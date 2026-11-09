@@ -32,7 +32,7 @@ export function AppShell() {
         <footer className="app-footer">
           <span>PuroGrano Grain Intelligence · MVP AgTech 2026</span>
           <span>
-            Datos de mercado simulados con fines demostrativos. No constituyen asesoramiento
+            Precios de referencia de Matba Rofex y DolarAPI. No constituyen asesoramiento
             financiero.
           </span>
         </footer>

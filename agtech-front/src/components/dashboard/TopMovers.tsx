@@ -6,8 +6,7 @@ import type { Quote } from '../../types/market'
 import { PanelHeader } from '../ui/Card'
 
 export function TopMovers({ quotes }: { quotes: Quote[] }) {
-  const movers = quotes
-    .filter((quote) => quote.venue !== 'cbot')
+  const movers = [...quotes]
     .sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct))
     .slice(0, 4)
 

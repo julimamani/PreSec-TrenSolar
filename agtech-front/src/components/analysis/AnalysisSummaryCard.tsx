@@ -8,7 +8,7 @@ import {
   TrendingUp,
   WandSparkles,
 } from 'lucide-react'
-import { MARKET_SNAPSHOT } from '../../data/marketData'
+import { useMarketData } from '../../hooks/useMarketData'
 import { formatDate, formatNumber, formatSignedUsd, formatUsd } from '../../lib/format'
 import type { AnalysisResult } from '../../types/analysis'
 import { QualityGauge } from '../charts/QualityGauge'
@@ -139,7 +139,8 @@ export function AnalysisSummaryCard({
 }
 
 export function AnalysisPlaceholder() {
-  const soja = MARKET_SNAPSHOT.quotes[0]
+  const { data } = useMarketData()
+  const soja = data?.quotes.find((quote) => quote.grain === 'soja')
 
   return (
     <div className="analysis-placeholder">
@@ -190,10 +191,12 @@ export function AnalysisPlaceholder() {
           <WandSparkles size={15} />
         </span>
         <div>
-          <span>Ejemplo · Soja Rosario</span>
-          <strong className="mono">{formatUsd(soja.priceUsd, 1)}/t</strong>
+          <span>Ejemplo · Soja Matba Rofex</span>
+          <strong className="mono">{soja ? `${formatUsd(soja.priceUsd, 1)}/t` : '—'}</strong>
         </div>
-        <Badge tone="success">+{soja.changePct.toFixed(2)}%</Badge>
+        <Badge tone={soja && soja.changePct >= 0 ? 'success' : 'neutral'}>
+          {soja ? `${soja.changePct >= 0 ? '+' : ''}${soja.changePct.toFixed(2)}%` : 'sin datos'}
+        </Badge>
       </div>
     </div>
   )
