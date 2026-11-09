@@ -1,11 +1,11 @@
 # 🌾 AgTech Vision | Tipificación Inteligente de Legumbres
 
 <div align="center">
-  ![React](https://shields.io)
-  <img src="https://raw.githubusercontent.com/tandpfun/skill-icons/65dea6c4eaca7da319e552c09f485c708a580061/icons/TypeScript.svg" width="40" alt="TypeScript" />
-  <img src="https://raw.githubusercontent.com/tandpfun/skill-icons/65dea6c4eaca7da319e552c09f485c708a580061/icons/Python-Dark.svg" width="40" alt="Python" />
-  <img src="https://raw.githubusercontent.com/tandpfun/skill-icons/65dea6c4eaca7da319e552c09f485c708a580061/icons/Spring-Dark.svg" width="40" alt="Spring Boot" />
-  <img src="https://raw.githubusercontent.com/tandpfun/skill-icons/65dea6c4eaca7da319e552c09f485c708a580061/icons/PostgreSQL-Dark.svg" width="40" alt="PostgreSQL" />
+  <img src="https://shields.io" alt="React" />
+  <img src="https://shields.io" alt="TypeScript" />
+  <img src="https://shields.io" alt="Python" />
+  <img src="https://shields.io" alt="Spring Boot" />
+  <img src="https://shields.io" alt="PostgreSQL" />
 </div>
 
 <br>
