@@ -65,11 +65,15 @@ servicios reales.
 ```env
 VITE_USE_MOCK=false
 VITE_ANALYSIS_API_URL=http://localhost:8000
-VITE_BACKEND_API_URL=http://localhost:8080
+VITE_BACKEND_API_URL=http://localhost:8081
 VITE_PREDICT_PATH=/predict
 VITE_SAVE_ANALYSIS_PATH=/api/v1/analyses
+VITE_MARKET_API_URL=http://localhost:8081/api/market-snapshot
 VITE_SPLINE_SCENE_URL=
 ```
+
+El backend Spring Boot del repositorio escucha en `http://localhost:8081` y usa H2
+en memoria por defecto.
 
 ### Contrato de inferencia
 

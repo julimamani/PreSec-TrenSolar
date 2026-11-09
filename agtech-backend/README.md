@@ -1,6 +1,6 @@
-# PreSec-TrenSolar
+# AgTech Vision · Backend
 
-Backend del MVP de **PreSec-TrenSolar**, una plataforma SaaS B2B para plantas procesadoras y acopiadoras de granos. Permite subir fotografías de muestras de legumbres, enviarlas a un microservicio de Computer Vision y registrar los porcentajes de calidad y rendimiento obtenidos.
+Backend del MVP de **AgTech Vision / PreSec-TrenSolar**, una plataforma SaaS B2B para plantas procesadoras y acopiadoras de granos. Permite subir fotografías de muestras de legumbres, enviarlas a un microservicio de Computer Vision y registrar los porcentajes de calidad y rendimiento obtenidos. También expone un agente de mercado híbrido y un estimador de impacto financiero.
 
 ## Stack
 
@@ -8,21 +8,26 @@ Backend del MVP de **PreSec-TrenSolar**, una plataforma SaaS B2B para plantas pr
 - Spring Boot 4.1.2 / Hibernate 7.4
 - Spring Data JPA
 - Spring MVC + `RestClient`
-- PostgreSQL
+- **H2 en memoria (base de datos por defecto)**
+- PostgreSQL (opcional, perfil `postgres`)
+- Spring Cache + Caffeine para el snapshot de mercado
 - Lombok
-- H2 para tests
 - Maven Wrapper
 
 ## Arquitectura
 
 ```text
 Frontend
-   │ multipart/form-data
+   │ multipart/form-data / JSON
    ▼
 Spring Boot API
    ├── FileStorageService ──────► uploads/ (almacenamiento local)
-   ├── PostgreSQL (JPA)
-   └── VisionIAClientService ───► FastAPI /api/predict
+   ├── H2 en memoria (JPA, por defecto)
+   │   └── PostgreSQL opcional (perfil "postgres")
+   ├── VisionIAClientService ───► FastAPI /api/predict
+   ├── MatbaRofexClient ────────► API de Matba Rofex
+   ├── DolarApiClient ──────────► DolarAPI
+   └── MarketDataService ───────► snapshot con caché (Caffeine)
 ```
 
 Capas principales:
@@ -39,10 +44,11 @@ Capas principales:
 ## Requisitos
 
 - Java 17 o superior
-- PostgreSQL 14 o superior
-- Microservicio de visión disponible en `http://localhost:8000` para ejecutar el flujo completo
+- **H2 incluido**: no hace falta instalar ni crear ninguna base de datos para desarrollo
+- PostgreSQL 14 o superior solo si activás el perfil `postgres`
+- Microservicio de visión disponible en `http://localhost:8000` para ejecutar el flujo completo de análisis
 
-Los tests no requieren PostgreSQL ni el microservicio de visión: usan H2 y mocks.
+Los tests no requieren PostgreSQL ni el microservicio de visión: usan H2 en memoria y mocks.
 
 ## Configuración
 
@@ -52,12 +58,20 @@ Variables de entorno principales:
 
 | Variable | Default | Descripción |
 |---|---|---|
-| `DB_URL` | `jdbc:postgresql://localhost:5432/presec_trensolar` | URL JDBC de PostgreSQL |
-| `DB_USERNAME` | `postgres` | Usuario de base de datos |
-| `DB_PASSWORD` | `postgres` | Contraseña de base de datos |
+| `SERVER_PORT` / `server.port` | `8081` | Puerto HTTP del backend |
+| `DB_URL` | `jdbc:h2:mem:presec;MODE=PostgreSQL;DB_CLOSE_DELAY=-1` | URL JDBC de H2 en memoria |
+| `DB_DRIVER` | `org.h2.Driver` | Driver JDBC de la base por defecto |
+| `DB_USERNAME` | `sa` | Usuario de H2 |
+| `DB_PASSWORD` | vacío | Contraseña de H2 |
 | `JPA_DDL_AUTO` | `update` | Estrategia de esquema de Hibernate |
 | `FILE_STORAGE_LOCATION` | `uploads` | Carpeta local para las imágenes |
 | `VISION_AI_BASE_URL` | `http://localhost:8000` | URL base del microservicio de visión |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:*,http://127.0.0.1:*` | Orígenes permitidos para el frontend |
+
+Para el agente de mercado también se pueden configurar `REMARKETS_USER`,
+`REMARKETS_PASSWORD`, `REMARKETS_ACCOUNT`, `DOLAR_API_URL`,
+`MARKET_CACHE_TTL`, `POROTO_SPOT_USD` y los precios de fallback. Ver
+`agtech-backend/.env.example` y `application.properties`.
 
 También se pueden ajustar los timeouts del cliente AI en `agtech-backend/src/main/resources/application.properties`:
 
@@ -68,32 +82,19 @@ app.vision-ai.read-timeout=30s
 
 ## Ejecución
 
-### 1. Crear la base de datos
+### 1. Iniciar el backend con H2 (recomendado)
 
-```bash
-createdb presec_trensolar
-```
-
-O con Docker:
-
-```bash
-docker run --name presec-postgres \
-  -e POSTGRES_DB=presec_trensolar \
-  -e POSTGRES_PASSWORD=postgres \
-  -p 5432:5432 \
-  -d postgres:16
-```
-
-### 2. Iniciar el backend
+No hace falta crear ni instalar una base de datos. H2 se levanta en memoria al
+arrancar la aplicación.
 
 ```bash
 cd agtech-backend
 ./mvnw spring-boot:run
 ```
 
-La API queda disponible en `http://localhost:8080`.
+La API queda disponible en `http://localhost:8081`.
 
-### 3. Ejecutar los tests
+### 2. Ejecutar los tests
 
 ```bash
 cd agtech-backend
@@ -104,6 +105,43 @@ Para ejecutar una clase de test específica:
 
 ```bash
 ./mvnw test -Dtest=ImageAnalysisServiceTest
+```
+
+Los tests usan H2 en memoria y no necesitan PostgreSQL ni el microservicio de visión.
+
+### 3. Usar PostgreSQL (opcional)
+
+Si preferís PostgreSQL, activá el perfil `postgres`:
+
+```bash
+cd agtech-backend
+SPRING_PROFILES_ACTIVE=postgres ./mvnw spring-boot:run
+```
+
+O con variables de entorno:
+
+```bash
+DB_URL=jdbc:postgresql://localhost:5432/presec_trensolar \
+DB_USERNAME=postgres \
+DB_PASSWORD=postgres \
+SPRING_PROFILES_ACTIVE=postgres \
+./mvnw spring-boot:run
+```
+
+La base debe existir previamente:
+
+```bash
+createdb presec_trensolar
+```
+
+O levantar PostgreSQL con Docker:
+
+```bash
+docker run --name presec-postgres \
+  -e POSTGRES_DB=presec_trensolar \
+  -e POSTGRES_PASSWORD=postgres \
+  -p 5432:5432 \
+  -d postgres:16
 ```
 
 ## API
@@ -123,7 +161,7 @@ Content-Type: multipart/form-data
 Ejemplo:
 
 ```bash
-curl -X POST http://localhost:8080/api/sample-analyses \
+curl -X POST http://localhost:8081/api/sample-analyses \
   -F "batchId=550e8400-e29b-41d4-a716-446655440000" \
   -F "file=@sample.jpg;type=image/jpeg"
 ```
@@ -163,7 +201,7 @@ Respuesta `201 Created`:
 Ejemplo de creación:
 
 ```bash
-curl -X POST http://localhost:8080/api/customers \
+curl -X POST http://localhost:8081/api/customers \
   -H "Content-Type: application/json" \
   -d '{
     "businessName": "Acopio Central",
@@ -186,7 +224,7 @@ curl -X POST http://localhost:8080/api/customers \
 Ejemplo de creación:
 
 ```bash
-curl -X POST http://localhost:8080/api/batches \
+curl -X POST http://localhost:8081/api/batches \
   -H "Content-Type: application/json" \
   -d '{
     "customerId": "550e8400-e29b-41d4-a716-446655440000",
@@ -207,6 +245,36 @@ curl -X POST http://localhost:8080/api/batches \
 | `DELETE` | `/api/inference-results/{id}` | Elimina un resultado |
 
 El flujo normal genera el resultado automáticamente al analizar una muestra. Estos endpoints CRUD están pensados para tareas administrativas o de desarrollo.
+
+### Mercado
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `GET` | `/api/market-snapshot` | Snapshot de mercado (también disponible en `/api/market/snapshot`) |
+
+El snapshot combina precios de Matba Rofex, el tipo de cambio de DolarAPI y un
+spot regional configurable para el poroto. Se cachea con Caffeine durante 15
+minutos por defecto (`MARKET_CACHE_TTL`). Si las credenciales de reMarkets no
+están configuradas, se usan precios de fallback.
+
+### Impacto financiero
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `POST` | `/api/financial/impact` | Estima la pérdida en USD/ARS a partir del porcentaje de defectos |
+
+Ejemplo:
+
+```bash
+curl -X POST http://localhost:8081/api/financial/impact \
+  -H "Content-Type: application/json" \
+  -d '{
+    "grain": "poroto",
+    "tons": 10,
+    "defectPercentage": 7.5,
+    "venue": "global"
+  }'
+```
 
 ### Estados del análisis
 
@@ -292,7 +360,7 @@ Todas las entidades usan UUID, auditoría (`createdAt`, `updatedAt`) y relacione
 | `400` | Archivo inválido, vacío o formato no soportado |
 | `404` | Lote o muestra no encontrado |
 | `413` | Imagen mayor al límite permitido |
-| `502` | Servicio de visión no disponible o respuesta inválida |
+| `502` | Servicio de visión o proveedor de mercado no disponible, o respuesta inválida |
 | `500` | Error interno de almacenamiento o persistencia |
 
 ## Estructura del proyecto
@@ -300,14 +368,16 @@ Todas las entidades usan UUID, auditoría (`createdAt`, `updatedAt`) y relacione
 ```text
 agtech-backend/
 ├── src/main/java/com/app/agtech/
-│   ├── config/        # Propiedades y RestClient
+│   ├── config/        # Propiedades, RestClient, caché y CORS
 │   ├── domain/        # Entidades y enums
 │   ├── exception/     # Excepciones de dominio e infraestructura
-│   ├── integration/   # Cliente del servicio de visión
+│   ├── integration/   # Clientes de visión, Matba Rofex y DolarAPI
 │   ├── repository/    # Repositorios Spring Data
-│   ├── service/       # Almacenamiento, persistencia y orquestación
-│   └── web/           # Controllers, DTOs y manejo de errores
+│   ├── service/       # Almacenamiento, persistencia, mercado y finanzas
+│   └── controller/    # Controllers, DTOs y manejo de errores (paquete web)
 ├── src/main/resources/
+│   ├── application.properties            # H2 por defecto
+│   └── application-postgres.properties   # Perfil opcional de PostgreSQL
 ├── src/test/
 ├── pom.xml
 └── mvnw
@@ -320,4 +390,5 @@ agtech-backend/
 - El procesamiento es síncrono.
 - El almacenamiento de imágenes es local, apto para un prototipo de hackathon.
 - No hay migraciones versionadas; el esquema se genera con `JPA_DDL_AUTO=update`.
-- No hay CORS configurado; si el frontend corre en otro origen, debe habilitarse para `/api/**` y `/uploads/**`.
+- CORS está habilitado para `/api/**` y `/uploads/**`; los orígenes se configuran con `CORS_ALLOWED_ORIGINS`.
+- H2 en memoria es el default: los datos se pierden al reiniciar. Para persistencia real, usar el perfil `postgres`.

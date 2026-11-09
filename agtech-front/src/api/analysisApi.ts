@@ -12,7 +12,7 @@ import type { MarketVenueId, Quote } from '../types/market'
 
 const ANALYSIS_API_URL =
   import.meta.env.VITE_ANALYSIS_API_URL ?? 'http://localhost:8000'
-const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL ?? 'http://localhost:8080'
+const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL ?? 'http://localhost:8081'
 const USE_MOCK = (import.meta.env.VITE_USE_MOCK ?? 'true') !== 'false'
 const PREDICT_PATH = import.meta.env.VITE_PREDICT_PATH ?? '/predict'
 const SAVE_PATH = import.meta.env.VITE_SAVE_ANALYSIS_PATH ?? '/api/v1/analyses'

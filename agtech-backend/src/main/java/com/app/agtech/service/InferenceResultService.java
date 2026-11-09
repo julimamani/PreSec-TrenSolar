@@ -6,8 +6,8 @@ import com.app.agtech.exception.ConflictException;
 import com.app.agtech.exception.ResourceNotFoundException;
 import com.app.agtech.repository.InferenceResultRepository;
 import com.app.agtech.repository.SampleAnalysisRepository;
-import com.app.agtech.web.dto.InferenceResultRequest;
-import com.app.agtech.web.dto.InferenceResultUpdateRequest;
+import com.app.agtech.controller.dto.InferenceResultRequest;
+import com.app.agtech.controller.dto.InferenceResultUpdateRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
