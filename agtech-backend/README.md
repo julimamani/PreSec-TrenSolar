@@ -9,7 +9,7 @@ Backend del MVP de **AgTech Vision / PreSec-TrenSolar**, una plataforma SaaS B2B
 - Spring Data JPA
 - Spring MVC + `RestClient`
 - **H2 en memoria (base de datos por defecto)**
-- PostgreSQL (opcional, perfil `postgres`)
+- MySQL (opcional, perfil `mysql`)
 - Spring Cache + Caffeine para el snapshot de mercado
 - Lombok
 - Maven Wrapper
@@ -23,7 +23,7 @@ Frontend
 Spring Boot API
    ├── FileStorageService ──────► uploads/ (almacenamiento local)
    ├── H2 en memoria (JPA, por defecto)
-   │   └── PostgreSQL opcional (perfil "postgres")
+   │   └── MySQL opcional (perfil "mysql")
    ├── VisionIAClientService ───► FastAPI /api/predict
    ├── MatbaRofexClient ────────► API de Matba Rofex
    ├── DolarApiClient ──────────► DolarAPI
@@ -45,10 +45,10 @@ Capas principales:
 
 - Java 17 o superior
 - **H2 incluido**: no hace falta instalar ni crear ninguna base de datos para desarrollo
-- PostgreSQL 14 o superior solo si activás el perfil `postgres`
+- MySQL 8.0 o superior solo si activás el perfil `mysql`
 - Microservicio de visión disponible en `http://localhost:8000` para ejecutar el flujo completo de análisis
 
-Los tests no requieren PostgreSQL ni el microservicio de visión: usan H2 en memoria y mocks.
+Los tests no requieren MySQL ni el microservicio de visión: usan H2 en memoria y mocks.
 
 ## Configuración
 
@@ -59,7 +59,7 @@ Variables de entorno principales:
 | Variable | Default | Descripción |
 |---|---|---|
 | `SERVER_PORT` / `server.port` | `8081` | Puerto HTTP del backend |
-| `DB_URL` | `jdbc:h2:mem:presec;MODE=PostgreSQL;DB_CLOSE_DELAY=-1` | URL JDBC de H2 en memoria |
+| `DB_URL` | `jdbc:h2:mem:presec;MODE=MySQL;DB_CLOSE_DELAY=-1` | URL JDBC de H2 en memoria |
 | `DB_DRIVER` | `org.h2.Driver` | Driver JDBC de la base por defecto |
 | `DB_USERNAME` | `sa` | Usuario de H2 |
 | `DB_PASSWORD` | vacío | Contraseña de H2 |
@@ -107,41 +107,41 @@ Para ejecutar una clase de test específica:
 ./mvnw test -Dtest=ImageAnalysisServiceTest
 ```
 
-Los tests usan H2 en memoria y no necesitan PostgreSQL ni el microservicio de visión.
+Los tests usan H2 en memoria y no necesitan MySQL ni el microservicio de visión.
 
-### 3. Usar PostgreSQL (opcional)
+### 3. Usar MySQL (opcional)
 
-Si preferís PostgreSQL, activá el perfil `postgres`:
+Si preferís MySQL, activá el perfil `mysql`:
 
 ```bash
 cd agtech-backend
-SPRING_PROFILES_ACTIVE=postgres ./mvnw spring-boot:run
+SPRING_PROFILES_ACTIVE=mysql ./mvnw spring-boot:run
 ```
 
 O con variables de entorno:
 
 ```bash
-DB_URL=jdbc:postgresql://localhost:5432/presec_trensolar \
-DB_USERNAME=postgres \
-DB_PASSWORD=postgres \
-SPRING_PROFILES_ACTIVE=postgres \
+DB_URL='jdbc:mysql://localhost:3306/presec_trensolar?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC' \
+DB_USERNAME=root \
+DB_PASSWORD=root \
+SPRING_PROFILES_ACTIVE=mysql \
 ./mvnw spring-boot:run
 ```
 
 La base debe existir previamente:
 
 ```bash
-createdb presec_trensolar
+mysql -u root -p -e "CREATE DATABASE presec_trensolar CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 ```
 
-O levantar PostgreSQL con Docker:
+O levantar MySQL con Docker:
 
 ```bash
-docker run --name presec-postgres \
-  -e POSTGRES_DB=presec_trensolar \
-  -e POSTGRES_PASSWORD=postgres \
-  -p 5432:5432 \
-  -d postgres:16
+docker run --name presec-mysql \
+  -e MYSQL_DATABASE=presec_trensolar \
+  -e MYSQL_ROOT_PASSWORD=root \
+  -p 3306:3306 \
+  -d mysql:8.4
 ```
 
 ## API
@@ -377,7 +377,7 @@ agtech-backend/
 │   └── controller/    # Controllers, DTOs y manejo de errores (paquete web)
 ├── src/main/resources/
 │   ├── application.properties            # H2 por defecto
-│   └── application-postgres.properties   # Perfil opcional de PostgreSQL
+│   └── application-mysql.properties      # Perfil opcional de MySQL
 ├── src/test/
 ├── pom.xml
 └── mvnw
@@ -391,4 +391,4 @@ agtech-backend/
 - El almacenamiento de imágenes es local, apto para un prototipo de hackathon.
 - No hay migraciones versionadas; el esquema se genera con `JPA_DDL_AUTO=update`.
 - CORS está habilitado para `/api/**` y `/uploads/**`; los orígenes se configuran con `CORS_ALLOWED_ORIGINS`.
-- H2 en memoria es el default: los datos se pierden al reiniciar. Para persistencia real, usar el perfil `postgres`.
+- H2 en memoria es el default: los datos se pierden al reiniciar. Para persistencia real, usar el perfil `mysql`.
