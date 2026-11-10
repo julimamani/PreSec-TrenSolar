@@ -15,8 +15,8 @@
 
 - Java 17 (`<java.version>17</java.version>`) and Spring Boot 4.1.2 / Hibernate 7.4 — check Boot 4 APIs, not Boot 3 examples.
 - Uses JPA (`spring-boot-starter-data-jpa`), Spring MVC (`spring-boot-starter-webmvc`), Bean Validation (`spring-boot-starter-validation`), `RestClient` (`spring-boot-starter-restclient`), Spring Cache + Caffeine, Lombok, and Jackson 3.
-- The default datasource is **H2 in memory** at `jdbc:h2:mem:presec;MODE=PostgreSQL;DB_CLOSE_DELAY=-1` (user `sa`, empty password), so no external database is required. Override with `DB_URL`, `DB_DRIVER`, `DB_USERNAME`, `DB_PASSWORD`, and `JPA_DDL_AUTO`.
-- PostgreSQL is optional: activate the `postgres` profile (`SPRING_PROFILES_ACTIVE=postgres`) to use `application-postgres.properties`.
+- The default datasource is **MySQL** at `jdbc:mysql://localhost:3306/presec_trensolar?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC` (user `root`, password `root`). Override with `DB_URL`, `DB_DRIVER`, `DB_USERNAME`, `DB_PASSWORD`, and `JPA_DDL_AUTO`.
+- H2 in memory is optional: activate the `h2` profile (`SPRING_PROFILES_ACTIVE=h2`) to use `application-h2.properties` at `jdbc:h2:mem:presec;MODE=MySQL;DB_CLOSE_DELAY=-1` (user `sa`, empty password). Tests always use H2.
 - The HTTP server listens on port `8081` (`server.port`).
 - Uploaded images go to `app.storage.location` (`uploads/` by default, resolved relative to `agtech-backend/`) and are served under `/uploads/**`; override with `FILE_STORAGE_LOCATION`. `agtech-backend/uploads/` is gitignored.
 - Upload endpoint: `POST /api/sample-analyses` (multipart fields `batchId` and `file`); only JPEG/PNG/WEBP up to 10 MB. It runs the full synchronous analysis and returns the completed `InferenceResult`.
@@ -32,8 +32,8 @@
 ```bash
 ./mvnw test                                # full test suite
 ./mvnw test -Dtest=AgtechBackendApplicationTests # single test class
-./mvnw spring-boot:run                     # run app with H2 (default)
-SPRING_PROFILES_ACTIVE=postgres ./mvnw spring-boot:run # run with PostgreSQL
+./mvnw spring-boot:run                     # run app with MySQL (default)
+SPRING_PROFILES_ACTIVE=h2 ./mvnw spring-boot:run # run with H2 in memory
 ./mvnw clean package                       # build jar into target/
 ```
 

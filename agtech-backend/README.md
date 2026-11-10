@@ -8,8 +8,8 @@ Backend del MVP de **AgTech Vision / PreSec-TrenSolar**, una plataforma SaaS B2B
 - Spring Boot 4.1.2 / Hibernate 7.4
 - Spring Data JPA
 - Spring MVC + `RestClient`
-- **H2 en memoria (base de datos por defecto)**
-- MySQL (opcional, perfil `mysql`)
+- **MySQL (base de datos principal)**
+- H2 en memoria (opcional para desarrollo rápido y tests)
 - Spring Cache + Caffeine para el snapshot de mercado
 - Lombok
 - Maven Wrapper
@@ -22,8 +22,8 @@ Frontend
    ▼
 Spring Boot API
    ├── FileStorageService ──────► uploads/ (almacenamiento local)
-   ├── H2 en memoria (JPA, por defecto)
-   │   └── MySQL opcional (perfil "mysql")
+   ├── MySQL (JPA, por defecto)
+   │   └── H2 en memoria opcional (perfil "h2")
    ├── VisionIAClientService ───► FastAPI /api/predict
    ├── MatbaRofexClient ────────► API de Matba Rofex
    ├── DolarApiClient ──────────► DolarAPI
@@ -44,8 +44,8 @@ Capas principales:
 ## Requisitos
 
 - Java 17 o superior
-- **H2 incluido**: no hace falta instalar ni crear ninguna base de datos para desarrollo
-- MySQL 8.0 o superior solo si activás el perfil `mysql`
+- **MySQL 8.0 o superior** (base de datos principal)
+- **H2 incluido**: alternativa en memoria si no querés instalar MySQL (perfil `h2`)
 - Microservicio de visión disponible en `http://localhost:8000` para ejecutar el flujo completo de análisis
 
 Los tests no requieren MySQL ni el microservicio de visión: usan H2 en memoria y mocks.
@@ -59,10 +59,10 @@ Variables de entorno principales:
 | Variable | Default | Descripción |
 |---|---|---|
 | `SERVER_PORT` / `server.port` | `8081` | Puerto HTTP del backend |
-| `DB_URL` | `jdbc:h2:mem:presec;MODE=MySQL;DB_CLOSE_DELAY=-1` | URL JDBC de H2 en memoria |
-| `DB_DRIVER` | `org.h2.Driver` | Driver JDBC de la base por defecto |
-| `DB_USERNAME` | `sa` | Usuario de H2 |
-| `DB_PASSWORD` | vacío | Contraseña de H2 |
+| `DB_URL` | `jdbc:mysql://localhost:3306/presec_trensolar?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC` | URL JDBC de MySQL |
+| `DB_DRIVER` | `com.mysql.cj.jdbc.Driver` | Driver JDBC de MySQL |
+| `DB_USERNAME` | `root` | Usuario de MySQL |
+| `DB_PASSWORD` | `root` | Contraseña de MySQL |
 | `JPA_DDL_AUTO` | `update` | Estrategia de esquema de Hibernate |
 | `FILE_STORAGE_LOCATION` | `uploads` | Carpeta local para las imágenes |
 | `VISION_AI_BASE_URL` | `http://localhost:8000` | URL base del microservicio de visión |
@@ -82,10 +82,25 @@ app.vision-ai.read-timeout=30s
 
 ## Ejecución
 
-### 1. Iniciar el backend con H2 (recomendado)
+### 1. Iniciar el backend con MySQL (recomendado)
 
-No hace falta crear ni instalar una base de datos. H2 se levanta en memoria al
-arrancar la aplicación.
+La base debe existir previamente:
+
+```bash
+mysql -u root -p -e "CREATE DATABASE presec_trensolar CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+```
+
+O levantar MySQL con Docker:
+
+```bash
+docker run --name presec-mysql \
+  -e MYSQL_DATABASE=presec_trensolar \
+  -e MYSQL_ROOT_PASSWORD=root \
+  -p 3306:3306 \
+  -d mysql:8.4
+```
+
+Luego arrancá el backend con los valores por defecto (`root` / `root`):
 
 ```bash
 cd agtech-backend
@@ -93,6 +108,15 @@ cd agtech-backend
 ```
 
 La API queda disponible en `http://localhost:8081`.
+
+Si tus credenciales son distintas, usá variables de entorno:
+
+```bash
+DB_URL='jdbc:mysql://localhost:3306/presec_trensolar?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC' \
+DB_USERNAME=root \
+DB_PASSWORD=root \
+./mvnw spring-boot:run
+```
 
 ### 2. Ejecutar los tests
 
@@ -109,39 +133,14 @@ Para ejecutar una clase de test específica:
 
 Los tests usan H2 en memoria y no necesitan MySQL ni el microservicio de visión.
 
-### 3. Usar MySQL (opcional)
+### 3. Usar H2 en memoria (opcional)
 
-Si preferís MySQL, activá el perfil `mysql`:
+Si no querés instalar MySQL, activá el perfil `h2`. La base se crea en memoria
+al arrancar y los datos se pierden al detener la aplicación:
 
 ```bash
 cd agtech-backend
-SPRING_PROFILES_ACTIVE=mysql ./mvnw spring-boot:run
-```
-
-O con variables de entorno:
-
-```bash
-DB_URL='jdbc:mysql://localhost:3306/presec_trensolar?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC' \
-DB_USERNAME=root \
-DB_PASSWORD=root \
-SPRING_PROFILES_ACTIVE=mysql \
-./mvnw spring-boot:run
-```
-
-La base debe existir previamente:
-
-```bash
-mysql -u root -p -e "CREATE DATABASE presec_trensolar CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-```
-
-O levantar MySQL con Docker:
-
-```bash
-docker run --name presec-mysql \
-  -e MYSQL_DATABASE=presec_trensolar \
-  -e MYSQL_ROOT_PASSWORD=root \
-  -p 3306:3306 \
-  -d mysql:8.4
+SPRING_PROFILES_ACTIVE=h2 ./mvnw spring-boot:run
 ```
 
 ## API
@@ -376,8 +375,8 @@ agtech-backend/
 │   ├── service/       # Almacenamiento, persistencia, mercado y finanzas
 │   └── controller/    # Controllers, DTOs y manejo de errores (paquete web)
 ├── src/main/resources/
-│   ├── application.properties            # H2 por defecto
-│   └── application-mysql.properties      # Perfil opcional de MySQL
+│   ├── application.properties            # MySQL por defecto
+│   └── application-h2.properties         # Perfil opcional de H2
 ├── src/test/
 ├── pom.xml
 └── mvnw
@@ -391,4 +390,4 @@ agtech-backend/
 - El almacenamiento de imágenes es local, apto para un prototipo de hackathon.
 - No hay migraciones versionadas; el esquema se genera con `JPA_DDL_AUTO=update`.
 - CORS está habilitado para `/api/**` y `/uploads/**`; los orígenes se configuran con `CORS_ALLOWED_ORIGINS`.
-- H2 en memoria es el default: los datos se pierden al reiniciar. Para persistencia real, usar el perfil `mysql`.
+- MySQL es el default: los datos persisten entre reinicios. El perfil `h2` es solo para desarrollo rápido y pierde los datos al reiniciar.

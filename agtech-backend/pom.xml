@@ -81,17 +81,17 @@
 			<optional>true</optional>
 		</dependency>
 
-		<!-- H2 es la base de datos por defecto para desarrollo y demo. -->
-		<dependency>
-			<groupId>com.h2database</groupId>
-			<artifactId>h2</artifactId>
-			<scope>runtime</scope>
-		</dependency>
-
-		<!-- MySQL es opcional: se usa con el perfil "mysql". -->
+		<!-- MySQL es la base de datos principal. -->
 		<dependency>
 			<groupId>com.mysql</groupId>
 			<artifactId>mysql-connector-j</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- H2 se usa en los tests y en el perfil opcional "h2". -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
 			<scope>runtime</scope>
 		</dependency>
 

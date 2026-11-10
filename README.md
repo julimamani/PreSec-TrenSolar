@@ -43,7 +43,7 @@ Diseñamos una arquitectura basada en microservicios, pensada para escalar desde
 *   **🧠 Agentes Cognitivos Orquestados:** Implementación de un flujo donde el Agente de Visión transfiere la data a un Agente Financiero para calcular la rentabilidad proyectada en tiempo real (ARS/USD).
 *   **📡 Backend Principal (Java Spring Boot):** 
     *   API REST que actúa como Gateway.
-    *   Gestión de históricos de lotes y trazabilidad en **H2** por defecto, con **PostgreSQL** opcional.
+    *   Gestión de históricos de lotes y trazabilidad en **MySQL** por defecto, con **H2** opcional para desarrollo.
     *   Agente de mercado híbrido: Matba Rofex + DolarAPI + spot regional.
 *   **💻 Interfaz de Mando (React + TypeScript + Vite):** 
     *   Diseño B2B *Dark Mode* enfocado en entornos industriales.
@@ -68,7 +68,7 @@ Diseñamos una arquitectura basada en microservicios, pensada para escalar desde
 - Node.js (>= 18)
 - Java 17+ (Maven Wrapper incluido)
 - Python 3.10+ solo si ejecutás el microservicio de visión por separado
-- No hace falta instalar una base de datos: el backend usa **H2 en memoria** por defecto
+- MySQL 8.0+ (base de datos por defecto). Si no querés instalarlo, el backend puede usar **H2 en memoria** con el perfil `h2`
 
 ### 1. Iniciar el Frontend (React)
 ```bash
@@ -97,6 +97,8 @@ cd agtech-backend
 ./mvnw spring-boot:run
 ```
 
-La API queda disponible en `http://localhost:8081`. La base de datos H2 se crea
-automáticamente en memoria y no requiere configuración adicional. Para usar
-PostgreSQL, revisá la sección correspondiente en `agtech-backend/README.md`.
+La API queda disponible en `http://localhost:8081`. Por defecto se conecta a
+MySQL en `localhost:3306/presec_trensolar` (usuario `root`, contraseña `root`).
+Creá la base antes de arrancar y revisá la sección de configuración de
+`agtech-backend/README.md`. Si preferís no instalar MySQL, ejecutá el backend
+con el perfil `h2`: `SPRING_PROFILES_ACTIVE=h2 ./mvnw spring-boot:run`.
