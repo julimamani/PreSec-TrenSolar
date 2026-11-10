@@ -1,8 +1,21 @@
 import { GRAINS } from '../data/marketData'
+import {
+  BACKEND_API_URL,
+  BACKEND_ENDPOINTS,
+  createSampleAnalysis,
+  ensureBatch,
+  estimateFinancialImpact,
+  resolveBackendAssetUrl,
+  type BackendInferenceResultDetail,
+  type BackendSampleAnalysis,
+} from './backendApi'
 import type {
+  AnalysisHistoryItem,
   AnalysisRequest,
   AnalysisResult,
+  BatchSummary,
   DefectDetail,
+  FinancialImpact,
   GrainType,
   QualityAttribute,
   QualityAxisPoint,
@@ -10,19 +23,12 @@ import type {
 } from '../types/analysis'
 import type { MarketVenueId, Quote } from '../types/market'
 
-const ANALYSIS_API_URL =
-  import.meta.env.VITE_ANALYSIS_API_URL ?? 'http://localhost:8000'
-const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL ?? 'http://localhost:8081'
 const USE_MOCK = (import.meta.env.VITE_USE_MOCK ?? 'true') !== 'false'
-const PREDICT_PATH = import.meta.env.VITE_PREDICT_PATH ?? '/predict'
-const SAVE_PATH = import.meta.env.VITE_SAVE_ANALYSIS_PATH ?? '/api/v1/analyses'
 
 export const API_RUNTIME = {
   mock: USE_MOCK,
-  analysisApiUrl: ANALYSIS_API_URL,
   backendApiUrl: BACKEND_API_URL,
-  predictPath: PREDICT_PATH,
-  savePath: SAVE_PATH,
+  sampleAnalysisPath: BACKEND_ENDPOINTS.sampleAnalyses,
 }
 
 interface DefectTemplate {
@@ -210,6 +216,94 @@ function defectSeverity(percentage: number): DefectDetail['severity'] {
   return 'low'
 }
 
+const DEFECT_LABELS: Record<string, string> = {
+  broken: 'Grano quebrado',
+  broken_grains: 'Grano quebrado',
+  damaged: 'Daño mecánico',
+  discolored: 'Manchado / decolorado',
+  wrinkled: 'Grano arrugado',
+  foreign_matter: 'Materia extraña',
+  foreign: 'Materia extraña',
+  split: 'Grano partido',
+  mold: 'Hongos',
+}
+
+const DEFECT_METADATA_KEYS = new Set([
+  'total_grains',
+  'healthy_grains',
+  'defective_grains',
+  'defective_area_pct',
+  'confidence',
+  'confidence_pct',
+  'model_version',
+  'processing_ms',
+])
+
+function toNumber(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : null
+  }
+  return null
+}
+
+function humanizeKey(key: string): string {
+  const normalized = key.replace(/[_-]+/g, ' ').trim()
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1)
+}
+
+/**
+ * Converts the backend `defect_details` map (counts from the vision service or
+ * percentages) into the typed defect list used by the UI.
+ */
+export function parseDefectDetails(
+  details: Record<string, unknown> | null | undefined,
+): DefectDetail[] {
+  if (!details) return []
+
+  const totalGrains = toNumber(details.total_grains)
+
+  return Object.entries(details)
+    .filter(([key, value]) => {
+      if (DEFECT_METADATA_KEYS.has(key)) return false
+      if (typeof value === 'object' && value !== null) return false
+      return toNumber(value) !== null
+    })
+    .map(([key, value]) => {
+      const raw = toNumber(value) ?? 0
+      const isPercentage = /(?:^|_)(?:pct|percent|percentage)$/i.test(key)
+      const percentage = isPercentage
+        ? raw
+        : totalGrains && totalGrains > 0
+          ? (raw / totalGrains) * 100
+          : raw
+
+      return {
+        id: key,
+        label: DEFECT_LABELS[key] ?? humanizeKey(key),
+        percentage: round(clamp(percentage, 0, 100), 1),
+        severity: defectSeverity(percentage),
+      }
+    })
+    .sort((first, second) => second.percentage - first.percentage)
+}
+
+function extractConfidence(
+  details: Record<string, unknown> | null | undefined,
+): number | undefined {
+  const raw = toNumber(details?.confidence ?? details?.confidence_pct)
+  if (raw === null) return undefined
+  return round(raw > 0 && raw <= 1 ? raw * 100 : raw, 1)
+}
+
+function extractModelVersion(
+  details: Record<string, unknown> | null | undefined,
+): string | undefined {
+  const raw = details?.model_version
+  return typeof raw === 'string' && raw.trim() !== '' ? raw : undefined
+}
+
 function attributeStatus(
   value: number,
   benchmark: number,
@@ -322,6 +416,109 @@ function buildMockResult(request: AnalysisRequest, quotes: Quote[] = []): Analys
   }
 }
 
+function nowMs(): number {
+  return typeof performance !== 'undefined' ? performance.now() : Date.now()
+}
+
+function buildBackendResult(
+  request: AnalysisRequest,
+  quotes: Quote[],
+  batch: BatchSummary,
+  response: BackendSampleAnalysis,
+  processingMs: number,
+): AnalysisResult {
+  const inference = response.inferenceResult
+  if (
+    response.status !== 'COMPLETED' ||
+    !inference ||
+    inference.exportPercentage === null ||
+    inference.discardPercentage === null
+  ) {
+    throw new Error(
+      `El backend no devolvió un resultado completo (estado ${response.status}).`,
+    )
+  }
+
+  const profile = GRAIN_PROFILES[request.grain]
+  const exportPercentage = round(clamp(inference.exportPercentage, 0, 100), 1)
+  const discardPercentage = round(clamp(inference.discardPercentage, 0, 100), 1)
+  const grade = gradeFromExport(exportPercentage)
+  const defects = parseDefectDetails(inference.defectDetails)
+
+  const quote = quotes.find((item) => item.grain === request.grain)
+  const pizarraUsd =
+    quote && quote.priceUsd > 0 ? quote.priceUsd : FALLBACK_PRICES[request.grain]
+  const venue = quote?.venue ?? profile.venue
+  const referenceDate = quote?.updatedAt ?? response.createdAt
+
+  const valuationFactor = 0.75 + (exportPercentage / 100) * 0.32
+  const estimatedUsd = round(pizarraUsd * valuationFactor, 1)
+  const premiumUsd = round(estimatedUsd - pizarraUsd, 1)
+  const premiumPct = round((premiumUsd / pizarraUsd) * 100, 2)
+
+  return {
+    id: response.id,
+    createdAt: response.createdAt,
+    grain: request.grain,
+    grainName: GRAINS[request.grain].name,
+    variety: request.variety?.trim() || batch.variety || profile.defaultVariety,
+    grade,
+    confidence: extractConfidence(inference.defectDetails),
+    exportPercentage,
+    discardPercentage,
+    defects,
+    attributes: [],
+    qualityAxes: [],
+    valuation: {
+      venue,
+      venueName: venueName(venue),
+      pizarraUsd,
+      estimatedUsd,
+      premiumUsd,
+      premiumPct,
+      referenceDate,
+    },
+    processingMs,
+    modelVersion: extractModelVersion(inference.defectDetails),
+    persisted: true,
+    sampleAnalysisId: response.id,
+    batchId: batch.id,
+    originalImageUrl: resolveBackendAssetUrl(response.originalImageUrl),
+    heatmapImageUrl: resolveBackendAssetUrl(inference.heatmapImageUrl),
+  }
+}
+
+async function attachFinancialImpact(
+  result: AnalysisResult,
+  batch: BatchSummary,
+  signal?: AbortSignal,
+): Promise<AnalysisResult> {
+  try {
+    const impact = await estimateFinancialImpact(
+      {
+        grain: result.grain,
+        tons: batch.estimatedTons > 0 ? batch.estimatedTons : 100,
+        defectPercentage: result.discardPercentage,
+        venue: result.valuation.venue,
+      },
+      signal,
+    )
+    result.financialImpact = {
+      priceUsdTon: impact.priceUsdTon,
+      exchangeRateUsed: impact.exchangeRateUsed,
+      defectPercentage: impact.defectPercentage,
+      penaltyFactor: impact.penaltyFactor,
+      lossUsd: impact.lossUsd,
+      lossArs: impact.lossArs,
+      source: impact.source,
+      calculatedAt: impact.calculatedAt,
+    } satisfies FinancialImpact
+  } catch {
+    // The loss estimate is complementary; the valuation stays valid without it.
+  }
+  return result
+}
+
 export async function analyzeSample(
   request: AnalysisRequest,
   signal?: AbortSignal,
@@ -332,46 +529,72 @@ export async function analyzeSample(
     return buildMockResult(request, quotes)
   }
 
-  const body = new FormData()
-  body.append('file', request.file)
-  body.append('grain', request.grain)
-  if (request.variety) body.append('variety', request.variety)
+  const batch =
+    request.batch ??
+    (await ensureBatch(
+      request.variety?.trim() || GRAIN_PROFILES[request.grain].defaultVariety,
+      signal,
+    ))
 
-  const response = await fetch(`${ANALYSIS_API_URL}${PREDICT_PATH}`, {
-    method: 'POST',
-    body,
-    signal,
-  })
+  const startedAt = nowMs()
+  const response = await createSampleAnalysis(batch.id, request.file, signal)
+  const processingMs = Math.max(1, Math.round(nowMs() - startedAt))
 
-  if (!response.ok) {
-    throw new Error(`El servicio de inferencia respondió ${response.status}.`)
-  }
-
-  return (await response.json()) as AnalysisResult
+  const result = buildBackendResult(request, quotes, batch, response, processingMs)
+  return attachFinancialImpact(result, batch, signal)
 }
 
+/**
+ * Live analyses are persisted by POST /api/sample-analyses, so there is no
+ * second write. In demo mode this only simulates the old local save step.
+ */
 export async function saveAnalysisResult(
   result: AnalysisResult,
-  signal?: AbortSignal,
+  _signal?: AbortSignal,
 ): Promise<{ id: string }> {
   if (USE_MOCK) {
-    await sleep(850, signal)
+    await sleep(850, _signal)
     return { id: result.id }
   }
 
-  const response = await fetch(`${BACKEND_API_URL}${SAVE_PATH}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(result),
-    signal,
-  })
+  return { id: result.sampleAnalysisId ?? result.id }
+}
 
-  if (!response.ok) {
-    throw new Error(`No se pudo guardar el análisis (${response.status}).`)
+/**
+ * Maps GET /api/inference-results into the local history shape. The backend
+ * does not persist grain or prices, so those fields stay empty.
+ */
+export function toHistoryItemFromInferenceResult(
+  result: BackendInferenceResultDetail,
+): AnalysisHistoryItem {
+  const exportPercentage =
+    result.exportPercentage !== null && result.exportPercentage !== undefined
+      ? round(clamp(result.exportPercentage, 0, 100), 1)
+      : result.discardPercentage !== null && result.discardPercentage !== undefined
+        ? round(clamp(100 - result.discardPercentage, 0, 100), 1)
+        : 0
+
+  const discardPercentage =
+    result.discardPercentage !== null && result.discardPercentage !== undefined
+      ? round(clamp(result.discardPercentage, 0, 100), 1)
+      : round(100 - exportPercentage, 1)
+
+  return {
+    id: result.sampleAnalysisId || result.id,
+    createdAt: result.createdAt,
+    grain: null,
+    grainName: 'Sin clasificar',
+    variety: '',
+    grade: gradeFromExport(exportPercentage),
+    exportPercentage,
+    discardPercentage,
+    confidence: null,
+    estimatedUsd: null,
+    pizarraUsd: null,
+    defectCount: parseDefectDetails(result.defectDetails).length,
+    source: 'backend',
+    heatmapImageUrl: resolveBackendAssetUrl(result.heatmapImageUrl),
   }
-
-  const saved = (await response.json()) as { id?: string }
-  return { id: saved.id ?? result.id }
 }
 
 export function validateImage(file: File): string | null {

@@ -1,8 +1,10 @@
 import axios from 'axios'
+import { BACKEND_API_URL, BACKEND_ENDPOINTS } from './backendApi'
 import type { MarketSnapshot } from '../types/market'
 
 const MARKET_API_URL =
-  import.meta.env.VITE_MARKET_API_URL ?? 'http://localhost:8081/api/market-snapshot'
+  import.meta.env.VITE_MARKET_API_URL ??
+  `${BACKEND_API_URL}${BACKEND_ENDPOINTS.marketSnapshot}`
 const CLIENT_CACHE_TTL_MS = 30_000
 
 let cachedSnapshot: { data: MarketSnapshot; fetchedAt: number } | null = null

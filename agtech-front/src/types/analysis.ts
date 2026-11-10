@@ -47,6 +47,17 @@ export interface MarketValuation {
   referenceDate: string
 }
 
+export interface FinancialImpact {
+  priceUsdTon: number
+  exchangeRateUsed: number
+  defectPercentage: number
+  penaltyFactor: number
+  lossUsd: number
+  lossArs: number
+  source: string
+  calculatedAt: string
+}
+
 export interface AnalysisResult {
   id: string
   createdAt: string
@@ -54,7 +65,8 @@ export interface AnalysisResult {
   grainName: string
   variety: string
   grade: QualityGrade
-  confidence: number
+  /** The backend does not persist a confidence score; absent for live analyses. */
+  confidence?: number
   exportPercentage: number
   discardPercentage: number
   defects: DefectDetail[]
@@ -62,28 +74,50 @@ export interface AnalysisResult {
   qualityAxes: QualityAxisPoint[]
   valuation: MarketValuation
   processingMs: number
-  modelVersion: string
+  /** Result of POST /api/financial/impact for the batch tonnage. */
+  financialImpact?: FinancialImpact
+  /** Only present when the inference service reports it. */
+  modelVersion?: string
+  /** True when the backend already persisted the sample analysis. */
+  persisted?: boolean
+  sampleAnalysisId?: string
+  batchId?: string
+  originalImageUrl?: string
+  heatmapImageUrl?: string
+}
+
+export interface BatchSummary {
+  id: string
+  customerId: string
+  variety: string
+  estimatedTons: number
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface AnalysisRequest {
   file: File
   grain: GrainType
   variety?: string
+  batch?: BatchSummary | null
 }
 
 export interface AnalysisHistoryItem {
   id: string
   createdAt: string
-  grain: GrainType
+  grain: GrainType | null
   grainName: string
   variety: string
   grade: QualityGrade
   exportPercentage: number
   discardPercentage: number
-  confidence: number
-  estimatedUsd: number
-  pizarraUsd: number
+  confidence: number | null
+  estimatedUsd: number | null
+  pizarraUsd: number | null
   defectCount: number
+  /** Where the record came from: local storage or GET /api/inference-results. */
+  source?: 'local' | 'backend'
+  heatmapImageUrl?: string
 }
 
 export interface AnalysisUiState {

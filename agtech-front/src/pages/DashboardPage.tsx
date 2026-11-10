@@ -97,7 +97,10 @@ export function DashboardPage() {
 
   const localQuotes = data.quotes
   const kpiQuotes = data.quotes.slice(0, 4)
-  const qualityData = lastAnalysis?.qualityAxes ?? data.qualityProfile
+  const qualityData =
+    lastAnalysis && lastAnalysis.qualityAxes.length > 0
+      ? lastAnalysis.qualityAxes
+      : data.qualityProfile
 
   const toggleGrain = (grain: GrainId) => {
     setGrains((current) => {

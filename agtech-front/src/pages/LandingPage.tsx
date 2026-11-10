@@ -237,8 +237,8 @@ export function LandingPage() {
                   error={analysis.error}
                   previewUrl={analysis.previewUrl}
                   hasResult={Boolean(analysis.result)}
-                  onAnalyze={(file, grain, variety) => {
-                    void analysis.analyze(file, grain, variety)
+                  onAnalyze={(file, grain, variety, batch) => {
+                    void analysis.analyze(file, grain, variety, batch)
                   }}
                   onReset={handleNewAnalysis}
                 />

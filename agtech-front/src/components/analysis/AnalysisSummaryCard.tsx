@@ -82,7 +82,11 @@ export function AnalysisSummaryCard({
         </div>
         <div>
           <span>Confianza IA</span>
-          <strong className="mono">{formatNumber(result.confidence, 1)}%</strong>
+          <strong className="mono">
+            {result.confidence !== undefined
+              ? `${formatNumber(result.confidence, 1)}%`
+              : '—'}
+          </strong>
         </div>
       </div>
 
@@ -128,8 +132,12 @@ export function AnalysisSummaryCard({
         <span className="mono">{result.id}</span>
         <span>·</span>
         <span>{formatDate(result.createdAt)}</span>
-        <span>·</span>
-        <span>{result.modelVersion}</span>
+        {result.modelVersion && (
+          <>
+            <span>·</span>
+            <span>{result.modelVersion}</span>
+          </>
+        )}
         <span className="result-card__stamp-icon">
           <CircleCheck size={13} aria-hidden="true" />
         </span>

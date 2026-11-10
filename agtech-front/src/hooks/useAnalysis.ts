@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
+  API_RUNTIME,
   analyzeSample,
   saveAnalysisResult as saveAnalysisToBackend,
   validateImage,
@@ -10,6 +11,7 @@ import type {
   AnalysisResult,
   AnalysisStatus,
   AnalysisUiState,
+  BatchSummary,
   GrainType,
 } from '../types/analysis'
 
@@ -64,7 +66,12 @@ export function useAnalysis() {
   }, [revokePreview])
 
   const analyze = useCallback(
-    async (file: File, grain: GrainType, variety?: string) => {
+    async (
+      file: File,
+      grain: GrainType,
+      variety?: string,
+      batch?: BatchSummary | null,
+    ) => {
       const validationError = validateImage(file)
       if (validationError) {
         setState({ ...initialState, status: 'error', error: validationError })
@@ -106,7 +113,7 @@ export function useAnalysis() {
 
       try {
         const result = await analyzeSample(
-          { file, grain, variety },
+          { file, grain, variety, batch },
           controller.signal,
           market?.quotes ?? [],
         )
@@ -123,7 +130,8 @@ export function useAnalysis() {
           error: null,
           previewUrl,
           isSaving: false,
-          saved: false,
+          // Live analyses are persisted by POST /api/sample-analyses.
+          saved: !API_RUNTIME.mock,
           saveError: null,
         })
         return result

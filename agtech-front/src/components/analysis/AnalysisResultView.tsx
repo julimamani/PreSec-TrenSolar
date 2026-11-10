@@ -81,7 +81,7 @@ export function AnalysisResultView({
               Grado {result.grade}
             </Badge>
             <span>{formatDateTime(result.createdAt)}</span>
-            <span>{result.modelVersion}</span>
+            {result.modelVersion && <span>{result.modelVersion}</span>}
             <span>{formatNumber(result.processingMs / 1000, 1)} s de proceso</span>
           </div>
         </div>
@@ -144,7 +144,11 @@ export function AnalysisResultView({
               </div>
               <div>
                 <span>Confianza del modelo</span>
-                <strong className="mono">{formatNumber(result.confidence, 1)}%</strong>
+                <strong className="mono">
+                  {result.confidence !== undefined
+                    ? `${formatNumber(result.confidence, 1)}%`
+                    : '—'}
+                </strong>
               </div>
               <div>
                 <span>Atributos fuera de rango</span>
@@ -201,6 +205,25 @@ export function AnalysisResultView({
               <span className="mono">{formatUsd(result.valuation.estimatedUsd, 1)}</span>
             </div>
           </div>
+          {result.financialImpact && (
+            <div className="valuation-impact">
+              <div>
+                <span>Pérdida estimada por descarte</span>
+                <small>
+                  factor {formatNumber(result.financialImpact.penaltyFactor, 2)} ·{' '}
+                  {formatNumber(result.financialImpact.defectPercentage, 1)}% defectuoso
+                </small>
+              </div>
+              <div className="valuation-impact__values">
+                <strong className="mono">
+                  {formatUsd(result.financialImpact.lossUsd, 1)}
+                </strong>
+                <small className="mono">
+                  $ {formatNumber(result.financialImpact.lossArs, 0)} ARS
+                </small>
+              </div>
+            </div>
+          )}
           <div className="valuation-formula">
             <FlaskConical size={15} aria-hidden="true" />
             <span>
@@ -230,7 +253,13 @@ export function AnalysisResultView({
               </span>
             }
           />
-          <QualityRadar data={result.qualityAxes} height={270} />
+          {result.qualityAxes.length > 0 ? (
+            <QualityRadar data={result.qualityAxes} height={270} />
+          ) : (
+            <div className="table-empty">
+              <span>El backend no devolvió el perfil de calidad por ejes.</span>
+            </div>
+          )}
         </Card>
 
         <Card className="result-view__defects">
@@ -257,6 +286,11 @@ export function AnalysisResultView({
                 </div>
               )
             })}
+            {result.defects.length === 0 && (
+              <div className="table-empty">
+                <span>El backend no devolvió el detalle de defectos.</span>
+              </div>
+            )}
           </div>
           <div className="defect-total">
             <span>Descarte total</span>
@@ -275,35 +309,44 @@ export function AnalysisResultView({
               </span>
             }
           />
-          <div className="data-table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Atributo</th>
-                  <th>Muestra</th>
-                  <th>Referencia</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.attributes.map((attribute) => (
-                  <tr key={attribute.id}>
-                    <td>{attribute.label}</td>
-                    <td className="mono">{attributeValue(attribute)}</td>
-                    <td className="mono muted">
-                      {formatNumber(attribute.benchmark, 1)}
-                      {attribute.unit === '%' ? '%' : ` ${attribute.unit}`}
-                    </td>
-                    <td>
-                      <Badge tone={statusTone(attribute.status)}>
-                        {statusLabel(attribute.status)}
-                      </Badge>
-                    </td>
+          {result.attributes.length > 0 ? (
+            <div className="data-table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Atributo</th>
+                    <th>Muestra</th>
+                    <th>Referencia</th>
+                    <th>Estado</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {result.attributes.map((attribute) => (
+                    <tr key={attribute.id}>
+                      <td>{attribute.label}</td>
+                      <td className="mono">{attributeValue(attribute)}</td>
+                      <td className="mono muted">
+                        {formatNumber(attribute.benchmark, 1)}
+                        {attribute.unit === '%' ? '%' : ` ${attribute.unit}`}
+                      </td>
+                      <td>
+                        <Badge tone={statusTone(attribute.status)}>
+                          {statusLabel(attribute.status)}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="table-empty">
+              <span>
+                El backend no persiste atributos fisicoquímicos; solo devuelve el
+                rendimiento exportable y los defectos detectados.
+              </span>
+            </div>
+          )}
           <div className="result-view__attributes-footer">
             <span>
               <ShieldCheck size={14} aria-hidden="true" />
@@ -314,6 +357,30 @@ export function AnalysisResultView({
             </Button>
           </div>
         </Card>
+
+        {result.heatmapImageUrl && (
+          <Card className="result-view__heatmap">
+            <PanelHeader eyebrow="Trazabilidad" title="Heatmap de defectos" />
+            <div className="result-heatmap">
+              <img
+                src={result.heatmapImageUrl}
+                alt={`Heatmap del análisis ${result.id}`}
+                loading="lazy"
+              />
+            </div>
+            {result.originalImageUrl && (
+              <a
+                href={result.originalImageUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="link-arrow"
+              >
+                Ver imagen original
+                <ArrowUpRight size={13} />
+              </a>
+            )}
+          </Card>
+        )}
       </div>
     </div>
   )

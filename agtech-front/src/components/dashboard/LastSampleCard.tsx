@@ -68,7 +68,11 @@ export function LastSampleCard({ analysis }: { analysis: AnalysisResult | null }
         </div>
         <div>
           <span>Confianza</span>
-          <strong className="mono">{formatNumber(analysis.confidence, 1)}%</strong>
+          <strong className="mono">
+            {analysis.confidence !== undefined
+              ? `${formatNumber(analysis.confidence, 1)}%`
+              : '—'}
+          </strong>
         </div>
         <div>
           <span>Pizarra</span>
