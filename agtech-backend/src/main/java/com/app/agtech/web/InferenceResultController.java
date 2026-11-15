@@ -1,7 +1,9 @@
 package com.app.agtech.web;
 
 import com.app.agtech.domain.entity.InferenceResult;
+import com.app.agtech.service.ExportStandardsService;
 import com.app.agtech.service.InferenceResultService;
+import com.app.agtech.web.dto.ExportEvaluationResponse;
 import com.app.agtech.web.dto.InferenceResultDetailResponse;
 import com.app.agtech.web.dto.InferenceResultRequest;
 import com.app.agtech.web.dto.InferenceResultUpdateRequest;
@@ -25,9 +27,14 @@ import java.util.UUID;
 public class InferenceResultController {
 
     private final InferenceResultService inferenceResultService;
+    private final ExportStandardsService exportStandardsService;
 
-    public InferenceResultController(InferenceResultService inferenceResultService) {
+    public InferenceResultController(
+            InferenceResultService inferenceResultService,
+            ExportStandardsService exportStandardsService
+    ) {
         this.inferenceResultService = inferenceResultService;
+        this.exportStandardsService = exportStandardsService;
     }
 
     @GetMapping
@@ -40,6 +47,11 @@ public class InferenceResultController {
     @GetMapping("/{id}")
     public InferenceResultDetailResponse findById(@PathVariable UUID id) {
         return InferenceResultDetailResponse.from(inferenceResultService.findById(id));
+    }
+
+    @GetMapping("/{id}/export-evaluation")
+    public ExportEvaluationResponse exportEvaluation(@PathVariable UUID id) {
+        return exportStandardsService.evaluate(inferenceResultService.findById(id));
     }
 
     @GetMapping("/by-sample-analysis/{sampleAnalysisId}")

@@ -4,6 +4,7 @@ import com.app.agtech.config.CacheConfig;
 import com.app.agtech.config.MarketProperties;
 import com.app.agtech.domain.enums.MarketGrain;
 import com.app.agtech.exception.MarketDataException;
+import com.app.agtech.integration.CacPizarraClient;
 import com.app.agtech.integration.DolarApiClient;
 import com.app.agtech.integration.MatbaRofexClient;
 import com.app.agtech.integration.dto.MatbaRofexQuote;
@@ -33,16 +34,21 @@ import java.util.Optional;
  * Hybrid market agent used by the dashboard and by the financial impact API.
  *
  * <ul>
- *   <li>Poroto: configurable regional spot (USD 1250/t by default).</li>
+ *   <li>Poroto: Cámara Arbitral de Cereales board price (ARS/t converted with
+ *       the mayorista rate), falling back to the configured regional spot
+ *       (USD 1250/t by default).</li>
  *   <li>Soja, Trigo and Maíz: Matba Rofex last price (entry {@code LA}) for the
- *       configured nearby futures, with explicit USD fallbacks.</li>
- *   <li>USD/ARS: DolarAPI mayorista, applied to all four grains.</li>
+ *       configured nearby futures, with explicit USD fallbacks. Remove a grain
+ *       from {@link #MARKET_GRAINS} to hide it from the dashboard.</li>
+ *   <li>USD/ARS: DolarAPI mayorista.</li>
  *   <li>Cache: Spring Cache ("marketCache") with a 15-minute minimum TTL.</li>
  * </ul>
  */
 @Service
 public class MarketDataService {
 
+    // Keep the dashboard populated with the four reference grains. Poroto stays
+    // first because it is the focus of the MVP analysis flow.
     private static final List<MarketGrain> MARKET_GRAINS = List.of(
             MarketGrain.POROTO,
             MarketGrain.SOJA,
@@ -60,6 +66,7 @@ public class MarketDataService {
 
     private final MatbaRofexClient matbaRofexClient;
     private final DolarApiClient dolarApiClient;
+    private final CacPizarraClient cacPizarraClient;
     private final MarketProperties properties;
 
     private volatile MarketSnapshotResponse lastSnapshot;
@@ -67,10 +74,12 @@ public class MarketDataService {
     public MarketDataService(
             MatbaRofexClient matbaRofexClient,
             DolarApiClient dolarApiClient,
+            CacPizarraClient cacPizarraClient,
             MarketProperties properties
     ) {
         this.matbaRofexClient = matbaRofexClient;
         this.dolarApiClient = dolarApiClient;
+        this.cacPizarraClient = cacPizarraClient;
         this.properties = properties;
     }
 
@@ -104,7 +113,7 @@ public class MarketDataService {
 
         for (MarketGrain grain : MARKET_GRAINS) {
             CommodityResult result = grain == MarketGrain.POROTO
-                    ? porotoQuote()
+                    ? porotoQuote(usdArs)
                     : matbaRofexQuote(grain);
             results.put(grain, result);
             addWarning(warnings, result.warning());
@@ -117,8 +126,8 @@ public class MarketDataService {
         List<MarketPricePointResponse> series = buildSeries(results);
         List<MarketQualityVsMarketResponse> qualityVsMarket = qualityVsMarket(quotes);
 
-        warnings.add("La API consultada prioriza Last Price y usa el ajuste (SE) cuando no hubo "
-                + "operaciones; volumen, open interest y basis regional se devuelven en cero.");
+        warnings.add("Matba Rofex no entrega volumen, open interest ni basis regional "
+                + "en esta integración; se devuelven en cero.");
 
         return new MarketSnapshotResponse(
                 now,
@@ -144,7 +153,26 @@ public class MarketDataService {
         );
     }
 
-    private CommodityResult porotoQuote() {
+    private CommodityResult porotoQuote(BigDecimal usdArs) {
+        String fallbackReason = null;
+        try {
+            Optional<BigDecimal> pizarraArs = cacPizarraClient.fetchPorotoPizarraArs();
+            if (pizarraArs.isPresent() && usdArs != null && usdArs.signum() > 0) {
+                BigDecimal usd = pizarraArs.get().divide(usdArs, 2, RoundingMode.HALF_UP);
+                if (usd.signum() > 0) {
+                    return new CommodityResult(
+                            MarketGrain.POROTO,
+                            usd,
+                            Instant.now(),
+                            "Cámara Arbitral pizarra",
+                            null
+                    );
+                }
+            }
+        } catch (RuntimeException exception) {
+            fallbackReason = safeMessage(exception);
+        }
+
         BigDecimal price = money(properties.porotoSpotUsd());
         return new CommodityResult(
                 MarketGrain.POROTO,
@@ -152,7 +180,10 @@ public class MarketDataService {
                 Instant.now(),
                 "spot regional",
                 "Poroto: se usa el spot regional parametrizado USD "
-                        + price.toPlainString() + "/t; no cotiza en Matba Rofex."
+                        + price.toPlainString() + "/t"
+                        + (fallbackReason == null
+                                ? "; no hay pizarra de Cámara Arbitral disponible."
+                                : " (Cámara Arbitral: " + fallbackReason + ").")
         );
     }
 
@@ -220,19 +251,24 @@ public class MarketDataService {
     }
 
     /**
-     * Matba Rofex only exposes the current last price, so the chart contains one
-     * point per snapshot instead of a fabricated history.
+     * The external providers only expose the current price, so the chart contains
+     * one point per snapshot instead of a fabricated history.
      */
     private List<MarketPricePointResponse> buildSeries(Map<MarketGrain, CommodityResult> results) {
         LocalDate date = LocalDate.now();
         return List.of(new MarketPricePointResponse(
                 date.toString(),
                 label(date),
-                money(results.get(MarketGrain.SOJA).price()),
-                money(results.get(MarketGrain.MAIZ).price()),
-                money(results.get(MarketGrain.TRIGO).price()),
-                money(results.get(MarketGrain.POROTO).price())
+                priceOf(results, MarketGrain.SOJA),
+                priceOf(results, MarketGrain.MAIZ),
+                priceOf(results, MarketGrain.TRIGO),
+                priceOf(results, MarketGrain.POROTO)
         ));
+    }
+
+    private BigDecimal priceOf(Map<MarketGrain, CommodityResult> results, MarketGrain grain) {
+        CommodityResult result = results.get(grain);
+        return result == null ? null : money(result.price());
     }
 
     private List<MarketQualityAxisResponse> qualityProfile() {

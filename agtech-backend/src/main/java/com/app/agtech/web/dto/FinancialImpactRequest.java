@@ -9,7 +9,7 @@ import jakarta.validation.constraints.Positive;
 
 public record FinancialImpactRequest(
         @NotBlank
-        @Pattern(regexp = "poroto|soja|trigo|maiz", message = "Unsupported grain")
+        @Pattern(regexp = "poroto", message = "Only poroto is supported in this MVP")
         String grain,
 
         @NotNull

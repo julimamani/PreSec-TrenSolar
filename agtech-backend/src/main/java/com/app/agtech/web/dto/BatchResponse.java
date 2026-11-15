@@ -8,6 +8,7 @@ import java.util.UUID;
 public record BatchResponse(
         UUID id,
         UUID customerId,
+        String grain,
         String variety,
         Double estimatedTons,
         Instant createdAt,
@@ -18,6 +19,7 @@ public record BatchResponse(
         return new BatchResponse(
                 batch.getId(),
                 batch.getCustomer().getId(),
+                batch.getGrain().id(),
                 batch.getVariety(),
                 batch.getEstimatedTons(),
                 batch.getCreatedAt(),
