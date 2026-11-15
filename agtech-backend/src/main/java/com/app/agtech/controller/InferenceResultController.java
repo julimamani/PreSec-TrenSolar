@@ -3,16 +3,10 @@ package com.app.agtech.controller;
 import com.app.agtech.domain.entity.InferenceResult;
 import com.app.agtech.service.ExportStandardsService;
 import com.app.agtech.service.InferenceResultService;
-<<<<<<< HEAD:agtech-backend/src/main/java/com/app/agtech/web/InferenceResultController.java
-import com.app.agtech.web.dto.ExportEvaluationResponse;
-import com.app.agtech.web.dto.InferenceResultDetailResponse;
-import com.app.agtech.web.dto.InferenceResultRequest;
-import com.app.agtech.web.dto.InferenceResultUpdateRequest;
-=======
 import com.app.agtech.controller.dto.InferenceResultDetailResponse;
 import com.app.agtech.controller.dto.InferenceResultRequest;
 import com.app.agtech.controller.dto.InferenceResultUpdateRequest;
->>>>>>> 0e670ae8c78af3b0456731605cc63b129ccf786f:agtech-backend/src/main/java/com/app/agtech/controller/InferenceResultController.java
+import com.app.agtech.web.dto.ExportEvaluationResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
