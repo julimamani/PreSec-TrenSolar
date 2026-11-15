@@ -4,7 +4,7 @@ import com.app.agtech.domain.entity.Customer;
 import com.app.agtech.exception.ConflictException;
 import com.app.agtech.exception.ResourceNotFoundException;
 import com.app.agtech.repository.CustomerRepository;
-import com.app.agtech.web.dto.CustomerRequest;
+import com.app.agtech.controller.dto.CustomerRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

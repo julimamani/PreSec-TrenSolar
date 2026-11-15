@@ -1,11 +1,12 @@
 # PuroGrano · Grain Intelligence
 
 Frontend del MVP AgTech de PuroGrano. Analiza una foto de grano, estima calidad y
-defectos con un modelo simulado, y cruza el resultado con pizarras de mercado para
-calcular una valuación por tonelada.
+defectos, y cruza el resultado con pizarras de mercado para calcular una valuación
+por tonelada.
 
-La aplicación corre hoy 100 % en modo demo. Está preparada para conectar un servicio
-de inferencia FastAPI y el backend Spring Boot sin cambiar componentes.
+La aplicación corre en modo demo por defecto y, al desactivar `VITE_USE_MOCK`,
+consume directamente el backend Spring Boot (`/api/sample-analyses`,
+`/api/batches`, `/api/inference-results` y `/api/market-snapshot`).
 
 ## Stack
 
@@ -45,12 +46,16 @@ npm run preview # serve del build
 ## Flujo de análisis
 
 1. El usuario elige una imagen JPG/PNG/WEBP de hasta 10 MB y el tipo de grano.
-2. `analyzeSample()` devuelve un resultado tipado (`AnalysisResult`).
-3. El resultado se guarda en `localStorage` y se emite un evento interno.
-4. El dashboard y los informes leen la última muestra y el historial mediante
-   `useStoredAnalysis`.
-5. Cada análisis genera un ID `PG-XXXX`, un grado A/B/C/D, defectos, atributos
-   fisicoquímicos y una valuación contra la pizarra vigente.
+2. `analyzeSample()` resuelve un lote con `GET /api/batches` (o crea cliente y lote
+   demo si todavía no existe) y sube la imagen con `POST /api/sample-analyses`.
+3. El backend ejecuta el flujo completo, persiste la muestra y devuelve el
+   `InferenceResult`.
+4. El frontend adapta esa respuesta a `AnalysisResult` y la guarda en
+   `localStorage`, además de emitir un evento interno.
+5. El dashboard y los informes leen la última muestra y el historial mediante
+   `useStoredAnalysis` y `GET /api/inference-results`.
+6. Cada análisis genera un grado A/B/C/D, defectos, y una valuación contra la
+   pizarra vigente del snapshot de mercado.
 
 Las claves nuevas son `purograno:last-analysis:v1` y
 `purograno:analysis-history:v1`. Al iniciar, la app migra automáticamente datos
@@ -58,34 +63,45 @@ guardados con las claves anteriores de TrenSolar.
 
 ## Modo demo vs. APIs reales
 
-Por defecto `VITE_USE_MOCK=true`, por lo que la inferencia y el guardado se simulan
-localmente. Copiá `.env.example` a `.env` y ajustá las variables para conectar los
-servicios reales.
+Por defecto `VITE_USE_MOCK=true`, por lo que la inferencia se simula localmente y
+no se escribe en el backend. Copiá `.env.example` a `.env` y desactivá el mock
+para usar los servicios reales.
 
 ```env
 VITE_USE_MOCK=false
-VITE_ANALYSIS_API_URL=http://localhost:8000
-VITE_BACKEND_API_URL=http://localhost:8080
-VITE_PREDICT_PATH=/predict
-VITE_SAVE_ANALYSIS_PATH=/api/v1/analyses
+VITE_BACKEND_API_URL=http://localhost:8081
+VITE_SAMPLE_ANALYSIS_PATH=/api/sample-analyses
+VITE_MARKET_API_URL=http://localhost:8081/api/market-snapshot
 VITE_SPLINE_SCENE_URL=
 ```
 
-### Contrato de inferencia
+El backend Spring Boot del repositorio escucha en `http://localhost:8081` y usa
+MySQL por defecto (perfil `h2` para memoria).
 
-`POST {VITE_ANALYSIS_API_URL}{VITE_PREDICT_PATH}` con `multipart/form-data`:
+### Endpoints consumidos
 
-- `file`: imagen
-- `grain`: `soja | maiz | trigo | poroto`
-- `variety`: texto opcional
+| Método | Endpoint                        | Uso                                         |
+| ------ | ------------------------------- | ------------------------------------------- |
+| GET    | `/api/market-snapshot`          | Cotizaciones, series y pizarras             |
+| GET    | `/api/batches`                  | Listado de lotes para el selector           |
+| POST   | `/api/batches`                  | Alta automática de un lote demo             |
+| GET    | `/api/customers`                | Reutilizar el cliente existente             |
+| POST   | `/api/customers`                | Alta automática de un cliente demo          |
+| POST   | `/api/sample-analyses`          | Subida de imagen + inferencia + persistencia |
+| GET    | `/api/inference-results`        | Historial persistido para informes          |
+| POST   | `/api/financial/impact`         | Pérdida estimada por descarte del lote      |
 
-La respuesta debe ser un `AnalysisResult` completo, con la misma forma que
-`src/types/analysis.ts`.
+`POST /api/sample-analyses` espera `multipart/form-data` con `batchId` y `file`.
+El backend se encarga de llamar al microservicio de visión (`VISION_AI_BASE_URL`)
+y de guardar el `InferenceResult`; el frontend no llama a FastAPI directamente.
 
-### Contrato de persistencia
+### Datos que el backend no persiste
 
-`POST {VITE_BACKEND_API_URL}{VITE_SAVE_ANALYSIS_PATH}` con el `AnalysisResult` en JSON.
-Se espera `{ "id": "..." }`; si no viene `id`, se conserva el de la inferencia.
+El modelo de datos del backend guarda exportable, descarte, defectos y heatmap,
+pero no el grano, la variedad ni los atributos fisicoquímicos. Por eso los
+análisis que vienen de `GET /api/inference-results` muestran “Sin clasificar” en
+el grano y sin confianza ni precio; los análisis recién subidos desde la UI sí
+conservan el grano elegido y la valuación calculada con el snapshot de mercado.
 
 ## Escena 3D / Spline
 

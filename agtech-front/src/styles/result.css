@@ -251,6 +251,45 @@
   line-height: 1.55;
 }
 
+.valuation-impact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 9px 10px;
+  border: 1px solid rgba(255, 122, 122, 0.28);
+  border-radius: 8px;
+  background: rgba(255, 122, 122, 0.06);
+  font-size: 9.5px;
+}
+
+.valuation-impact > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.valuation-impact span {
+  color: var(--text-soft);
+  font-weight: 600;
+}
+
+.valuation-impact small {
+  color: var(--faint);
+  font-size: 8.5px;
+}
+
+.valuation-impact__values {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.valuation-impact__values strong {
+  color: var(--danger);
+  font-size: 12px;
+}
+
 .valuation-formula svg {
   flex: 0 0 auto;
   margin-top: 1px;
@@ -331,6 +370,25 @@
 
 .result-view__attributes-footer svg {
   color: var(--accent);
+}
+
+.result-view__heatmap {
+  grid-column: span 12;
+}
+
+.result-heatmap {
+  overflow: hidden;
+  margin-bottom: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #09110d;
+}
+
+.result-heatmap img {
+  display: block;
+  width: 100%;
+  max-height: 360px;
+  object-fit: contain;
 }
 
 .result-view__radar .chart-legend {

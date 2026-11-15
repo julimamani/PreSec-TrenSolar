@@ -13,11 +13,12 @@ import {
 import { API_RUNTIME, validateImage } from '../../api/analysisApi'
 import { GRAINS, ANALYSIS_GRAINS } from '../../data/marketData'
 import { useMarketData } from '../../hooks/useMarketData'
-import { cn, formatUsd } from '../../lib/format'
-import type { GrainType } from '../../types/analysis'
+import { useBatches } from '../../hooks/useBatches'
+import { cn, formatNumber, formatUsd } from '../../lib/format'
+import type { BatchSummary, GrainType } from '../../types/analysis'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
-import { Progress } from '../ui/Field'
+import { Progress, Select } from '../ui/Field'
 import { Input } from '../ui/Input'
 
 interface AnalysisUploaderProps {
@@ -27,7 +28,12 @@ interface AnalysisUploaderProps {
   error: string | null
   previewUrl: string | null
   hasResult: boolean
-  onAnalyze: (file: File, grain: GrainType, variety?: string) => void
+  onAnalyze: (
+    file: File,
+    grain: GrainType,
+    variety?: string,
+    batch?: BatchSummary | null,
+  ) => void
   onReset: () => void
   compact?: boolean
 }
@@ -44,11 +50,13 @@ export function AnalysisUploader({
   compact = false,
 }: AnalysisUploaderProps) {
   const { data: market } = useMarketData()
+  const { batches, isLoading: isLoadingBatches, error: batchesError } = useBatches()
   const inputId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<File | null>(null)
   const [grain, setGrain] = useState<GrainType>('soja')
   const [variety, setVariety] = useState('')
+  const [batchId, setBatchId] = useState('')
   const [dragging, setDragging] = useState(false)
   const [localError, setLocalError] = useState<string | null>(null)
   const [localPreview, setLocalPreview] = useState<string | null>(null)
@@ -89,6 +97,8 @@ export function AnalysisUploader({
   const displayError = localError ?? error
   const displayPreview = previewUrl ?? localPreview
   const selectedGrain = GRAINS[grain]
+  const selectedBatch =
+    batches.find((batch) => batch.id === batchId) ?? batches[0] ?? null
   const pizarra = market?.quotes.find((quote) => quote.grain === grain)?.priceUsd
 
   return (
@@ -199,6 +209,30 @@ export function AnalysisUploader({
           </div>
         </div>
 
+        {!API_RUNTIME.mock && (
+          <div className="uploader__batch">
+            <Select
+              label="Lote del backend"
+              value={selectedBatch?.id ?? ''}
+              disabled={isBusy || isLoadingBatches || batches.length === 0}
+              onChange={(event) => setBatchId(event.target.value)}
+              hint={
+                batches.length === 0
+                  ? 'No hay lotes creados: el backend generará uno automáticamente al analizar.'
+                  : undefined
+              }
+            >
+              {batches.length === 0 && <option value="">Sin lotes</option>}
+              {batches.map((batch) => (
+                <option key={batch.id} value={batch.id}>
+                  {batch.variety} · {formatNumber(batch.estimatedTons, 0)} t
+                </option>
+              ))}
+            </Select>
+            {batchesError && <span className="field__hint">{batchesError}</span>}
+          </div>
+        )}
+
         <div className="uploader__row">
           <Input
             label="Variedad / híbrido"
@@ -247,7 +281,7 @@ export function AnalysisUploader({
           loading={isBusy}
           icon={!isBusy ? <ScanLine size={16} /> : undefined}
           disabled={!file || isBusy}
-          onClick={() => file && onAnalyze(file, grain, variety)}
+          onClick={() => file && onAnalyze(file, grain, variety, selectedBatch)}
         >
           {hasResult ? 'Volver a analizar' : 'Analizar con IA'}
         </Button>
@@ -268,8 +302,8 @@ export function AnalysisUploader({
         <ShieldCheck size={14} aria-hidden="true" />
         <span>
           {API_RUNTIME.mock
-            ? 'Modo demo: la inferencia se simula localmente. Desactivá VITE_USE_MOCK para conectar FastAPI.'
-            : `Conectado a ${API_RUNTIME.analysisApiUrl} · imagen procesada sin almacenamiento público.`}
+            ? 'Modo demo: la inferencia se simula localmente. Desactivá VITE_USE_MOCK para usar el backend.'
+            : `Conectado a ${API_RUNTIME.backendApiUrl} · POST ${API_RUNTIME.sampleAnalysisPath}`}
         </span>
         {!API_RUNTIME.mock && <Badge tone="success">live</Badge>}
       </div>

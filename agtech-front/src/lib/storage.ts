@@ -46,10 +46,12 @@ export function saveAnalysisResult(result: AnalysisResult): void {
       grade: result.grade,
       exportPercentage: result.exportPercentage,
       discardPercentage: result.discardPercentage,
-      confidence: result.confidence,
+      confidence: result.confidence ?? null,
       estimatedUsd: result.valuation.estimatedUsd,
       pizarraUsd: result.valuation.pizarraUsd,
       defectCount: result.defects.length,
+      source: 'local',
+      heatmapImageUrl: result.heatmapImageUrl,
     }
 
     const history = getAnalysisHistory()

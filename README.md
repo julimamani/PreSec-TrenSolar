@@ -2,7 +2,7 @@
 
 <p align="center">
   <a href="https://skillicons.dev">
-    <img src="https://skillicons.dev/icons?i=git,react,ts,py,tailwind,postgres,spring" />
+    <img src="https://skillicons.dev/icons?i=git,react,ts,py,tailwind,spring" />
   </a>
 </p>
 
@@ -43,7 +43,8 @@ Diseñamos una arquitectura basada en microservicios, pensada para escalar desde
 *   **🧠 Agentes Cognitivos Orquestados:** Implementación de un flujo donde el Agente de Visión transfiere la data a un Agente Financiero para calcular la rentabilidad proyectada en tiempo real (ARS/USD).
 *   **📡 Backend Principal (Java Spring Boot):** 
     *   API REST que actúa como Gateway.
-    *   Gestión de históricos de lotes y trazabilidad en **PostgreSQL**.
+    *   Gestión de históricos de lotes y trazabilidad en **MySQL** por defecto, con **H2** opcional para desarrollo.
+    *   Agente de mercado híbrido: Matba Rofex + DolarAPI + spot regional.
 *   **💻 Interfaz de Mando (React + TypeScript + Vite):** 
     *   Diseño B2B *Dark Mode* enfocado en entornos industriales.
     *   Integración de **Spline 3D** para visualización isométrica del flujo de acopio.
@@ -65,20 +66,25 @@ Diseñamos una arquitectura basada en microservicios, pensada para escalar desde
 
 ### Prerrequisitos
 - Node.js (>= 18)
-- Python 3.10+
-- Java 17+ (Maven)
-- PostgreSQL
+- Java 17+ (Maven Wrapper incluido)
+- Python 3.10+ solo si ejecutás el microservicio de visión por separado
+- MySQL 8.0+ (base de datos por defecto). Si no querés instalarlo, el backend puede usar **H2 en memoria** con el perfil `h2`
 
 ### 1. Iniciar el Frontend (React)
 ```bash
-cd agtech-dashboard
+cd agtech-front
 npm install
 npm run dev
 ```
 
-### 2. Iniciar el Microservicio de Visión (Python)
+La app queda disponible en `http://localhost:5173`.
+
+### 2. Iniciar el Microservicio de Visión (Python, opcional)
+El backend espera el servicio de visión en `http://localhost:8000`. Si no lo tenés
+levantado, la carga de muestras reales devolverá un error 502.
+
 ```bash
-cd vision-api
+# Desde el directorio del microservicio de visión, si lo tenés clonado aparte
 python -m venv venv
 source venv/bin/activate  # En Windows: venv\Scripts\activate
 pip install -r requirements.txt
@@ -87,6 +93,12 @@ uvicorn main:app --reload --port 8000
 
 ### 3. Iniciar el Backend (Spring Boot)
 ```bash
-cd core-backend
-mvn spring-boot:run
+cd agtech-backend
+./mvnw spring-boot:run
 ```
+
+La API queda disponible en `http://localhost:8081`. Por defecto se conecta a
+MySQL en `localhost:3306/presec_trensolar` (usuario `root`, contraseña `root`).
+Creá la base antes de arrancar y revisá la sección de configuración de
+`agtech-backend/README.md`. Si preferís no instalar MySQL, ejecutá el backend
+con el perfil `h2`: `SPRING_PROFILES_ACTIVE=h2 ./mvnw spring-boot:run`.

@@ -7,8 +7,14 @@ import com.app.agtech.exception.MarketDataException;
 import com.app.agtech.integration.CacPizarraClient;
 import com.app.agtech.integration.DolarApiClient;
 import com.app.agtech.integration.MatbaRofexClient;
+<<<<<<< HEAD
 import com.app.agtech.web.dto.MarketQuoteResponse;
 import com.app.agtech.web.dto.MarketSnapshotResponse;
+=======
+import com.app.agtech.integration.dto.MatbaRofexQuote;
+import com.app.agtech.controller.dto.MarketQuoteResponse;
+import com.app.agtech.controller.dto.MarketSnapshotResponse;
+>>>>>>> 0e670ae8c78af3b0456731605cc63b129ccf786f
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;

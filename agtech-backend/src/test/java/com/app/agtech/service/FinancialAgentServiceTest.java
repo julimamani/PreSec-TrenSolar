@@ -1,10 +1,10 @@
 package com.app.agtech.service;
 
-import com.app.agtech.web.dto.FinancialImpactRequest;
-import com.app.agtech.web.dto.FinancialImpactResponse;
-import com.app.agtech.web.dto.MarketMetadata;
-import com.app.agtech.web.dto.MarketQuoteResponse;
-import com.app.agtech.web.dto.MarketSnapshotResponse;
+import com.app.agtech.controller.dto.FinancialImpactRequest;
+import com.app.agtech.controller.dto.FinancialImpactResponse;
+import com.app.agtech.controller.dto.MarketMetadata;
+import com.app.agtech.controller.dto.MarketQuoteResponse;
+import com.app.agtech.controller.dto.MarketSnapshotResponse;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

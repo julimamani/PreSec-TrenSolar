@@ -8,12 +8,12 @@ import com.app.agtech.integration.CacPizarraClient;
 import com.app.agtech.integration.DolarApiClient;
 import com.app.agtech.integration.MatbaRofexClient;
 import com.app.agtech.integration.dto.MatbaRofexQuote;
-import com.app.agtech.web.dto.MarketMetadata;
-import com.app.agtech.web.dto.MarketPricePointResponse;
-import com.app.agtech.web.dto.MarketQualityAxisResponse;
-import com.app.agtech.web.dto.MarketQualityVsMarketResponse;
-import com.app.agtech.web.dto.MarketQuoteResponse;
-import com.app.agtech.web.dto.MarketSnapshotResponse;
+import com.app.agtech.controller.dto.MarketMetadata;
+import com.app.agtech.controller.dto.MarketPricePointResponse;
+import com.app.agtech.controller.dto.MarketQualityAxisResponse;
+import com.app.agtech.controller.dto.MarketQualityVsMarketResponse;
+import com.app.agtech.controller.dto.MarketQuoteResponse;
+import com.app.agtech.controller.dto.MarketSnapshotResponse;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 

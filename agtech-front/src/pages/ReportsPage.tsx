@@ -16,7 +16,9 @@ import { Badge } from '../components/ui/Badge'
 import { Button, buttonClass } from '../components/ui/Button'
 import { Card, PanelHeader } from '../components/ui/Card'
 import { Select } from '../components/ui/Field'
+import { API_RUNTIME } from '../api/analysisApi'
 import { GRAINS, getMockAnalysisHistory } from '../data/marketData'
+import { useInferenceResults } from '../hooks/useInferenceResults'
 import { useStoredAnalysis } from '../hooks/useStoredAnalysis'
 import { formatDate, formatNumber, formatUsd } from '../lib/format'
 import type { AnalysisHistoryItem, GrainType, QualityGrade } from '../types/analysis'
@@ -36,6 +38,7 @@ function csvFromHistory(items: AnalysisHistoryItem[]) {
       'confianza_pct',
       'precio_estimado_usd_t',
       'pizarra_usd_t',
+      'origen',
     ],
     ...items.map((item) => [
       item.id,
@@ -45,9 +48,10 @@ function csvFromHistory(items: AnalysisHistoryItem[]) {
       item.grade,
       item.exportPercentage.toFixed(1),
       item.discardPercentage.toFixed(1),
-      item.confidence.toFixed(1),
-      item.estimatedUsd.toFixed(1),
-      item.pizarraUsd.toFixed(1),
+      item.confidence !== null ? item.confidence.toFixed(1) : '',
+      item.estimatedUsd !== null ? item.estimatedUsd.toFixed(1) : '',
+      item.pizarraUsd !== null ? item.pizarraUsd.toFixed(1) : '',
+      item.source ?? 'local',
     ]),
   ]
   return rows.map((row) => row.join(',')).join('\n')
@@ -55,15 +59,23 @@ function csvFromHistory(items: AnalysisHistoryItem[]) {
 
 export function ReportsPage() {
   const { history } = useStoredAnalysis()
+  const { items: backendItems, error: backendError, refetch: refetchBackend } =
+    useInferenceResults()
   const [grainFilter, setGrainFilter] = useState<'all' | GrainType>('all')
 
   const combined = useMemo(() => {
     const storedIds = new Set(history.map((item) => item.id))
-    const demo = getMockAnalysisHistory().filter((item) => !storedIds.has(item.id))
-    return [...history, ...demo].sort(
+    const remote = backendItems.filter((item) => !storedIds.has(item.id))
+    const remoteIds = new Set(remote.map((item) => item.id))
+    const demo = API_RUNTIME.mock
+      ? getMockAnalysisHistory().filter(
+          (item) => !storedIds.has(item.id) && !remoteIds.has(item.id),
+        )
+      : []
+    return [...history, ...remote, ...demo].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     )
-  }, [history])
+  }, [history, backendItems])
 
   const filtered = useMemo(
     () =>
@@ -74,13 +86,21 @@ export function ReportsPage() {
   const averageExport = combined.length
     ? combined.reduce((total, item) => total + item.exportPercentage, 0) / combined.length
     : 0
-  const averageConfidence = combined.length
-    ? combined.reduce((total, item) => total + item.confidence, 0) / combined.length
-    : 0
-  const averagePremium = combined.length
-    ? combined.reduce((total, item) => total + (item.estimatedUsd - item.pizarraUsd), 0) /
-      combined.length
-    : 0
+  const confidenceValues = combined
+    .map((item) => item.confidence)
+    .filter((value): value is number => value !== null)
+  const averageConfidence = confidenceValues.length
+    ? confidenceValues.reduce((total, value) => total + value, 0) / confidenceValues.length
+    : null
+  const premiums = combined
+    .filter(
+      (item): item is AnalysisHistoryItem & { estimatedUsd: number; pizarraUsd: number } =>
+        item.estimatedUsd !== null && item.pizarraUsd !== null,
+    )
+    .map((item) => item.estimatedUsd - item.pizarraUsd)
+  const averagePremium = premiums.length
+    ? premiums.reduce((total, value) => total + value, 0) / premiums.length
+    : null
 
   const byGrain: ExportByGrainPoint[] = (Object.keys(GRAINS) as Array<keyof typeof GRAINS>)
     .map((grain) => {
@@ -138,7 +158,7 @@ export function ReportsPage() {
           <span>Análisis registrados</span>
           <strong className="mono">{formatNumber(combined.length)}</strong>
           <small>
-            {history.length} {history.length === 1 ? 'guardado' : 'guardados'} en este navegador
+            {history.length} en este navegador · {backendItems.length} en el backend
           </small>
         </div>
         <div className="report-metric">
@@ -150,16 +170,37 @@ export function ReportsPage() {
         <div className="report-metric">
           <span className="report-metric__icon"><Sparkles size={18} /></span>
           <span>Confianza promedio</span>
-          <strong className="mono">{formatNumber(averageConfidence, 1)}%</strong>
-          <small>Modelo grain-vision v1.4</small>
+          <strong className="mono">
+            {averageConfidence !== null ? `${formatNumber(averageConfidence, 1)}%` : '—'}
+          </strong>
+          <small>
+            {averageConfidence !== null
+              ? 'Reportada por el servicio de visión'
+              : 'El backend no persiste la confianza'}
+          </small>
         </div>
         <div className="report-metric">
           <span className="report-metric__icon"><TrendingUp size={18} /></span>
           <span>Prima media</span>
-          <strong className="mono">{formatUsd(averagePremium, 1)}</strong>
-          <small>por tonelada vs. pizarra</small>
+          <strong className="mono">
+            {averagePremium !== null ? formatUsd(averagePremium, 1) : '—'}
+          </strong>
+          <small>
+            {averagePremium !== null
+              ? 'por tonelada vs. pizarra'
+              : 'Sin grano asociado en el backend'}
+          </small>
         </div>
       </div>
+
+      {backendError && (
+        <div className="alert alert--danger" role="alert">
+          <span>{backendError}</span>
+          <Button size="sm" variant="outline" onClick={() => void refetchBackend()}>
+            Reintentar
+          </Button>
+        </div>
+      )}
 
       <div className="dashboard-grid">
         <Card className="span-8 dash-panel">
@@ -247,32 +288,50 @@ export function ReportsPage() {
             </thead>
             <tbody>
               {filtered.map((item) => {
-                const grain = GRAINS[item.grain]
-                const premium = item.estimatedUsd - item.pizarraUsd
+                const grain = item.grain ? GRAINS[item.grain] : null
+                const premium =
+                  item.estimatedUsd !== null && item.pizarraUsd !== null
+                    ? item.estimatedUsd - item.pizarraUsd
+                    : null
                 return (
                   <tr key={item.id}>
                     <td>
                       <span className="report-id">
-                        <span className="report-id__dot" style={{ backgroundColor: grain.color }} />
+                        <span
+                          className="report-id__dot"
+                          style={{ backgroundColor: grain?.color ?? 'var(--muted)' }}
+                        />
                         <span>
                           <strong className="mono">{item.id}</strong>
-                          <small>{item.variety}</small>
+                          <small>
+                            {item.variety ||
+                              (item.source === 'backend' ? 'Persistido en backend' : '—')}
+                          </small>
                         </span>
                       </span>
                     </td>
                     <td className="muted">{formatDate(item.createdAt)}</td>
-                    <td>{grain.name}</td>
+                    <td>{grain?.name ?? item.grainName}</td>
                     <td>
                       <span className={`grade-pill grade-pill--${item.grade.toLowerCase()}`}>
                         {item.grade}
                       </span>
                     </td>
                     <td className="is-right mono">{formatNumber(item.exportPercentage, 1)}%</td>
-                    <td className="is-right mono muted">{formatNumber(item.confidence, 1)}%</td>
-                    <td className="is-right mono">{formatUsd(item.estimatedUsd, 1)}</td>
-                    <td className={`is-right mono ${premium >= 0 ? 'text-up' : 'text-down'}`}>
-                      {premium >= 0 ? '+' : '−'}
-                      {formatNumber(Math.abs(premium), 1)}
+                    <td className="is-right mono muted">
+                      {item.confidence !== null ? `${formatNumber(item.confidence, 1)}%` : '—'}
+                    </td>
+                    <td className="is-right mono">
+                      {item.estimatedUsd !== null ? formatUsd(item.estimatedUsd, 1) : '—'}
+                    </td>
+                    <td
+                      className={`is-right mono ${
+                        premium === null ? 'muted' : premium >= 0 ? 'text-up' : 'text-down'
+                      }`}
+                    >
+                      {premium === null
+                        ? '—'
+                        : `${premium >= 0 ? '+' : '−'}${formatNumber(Math.abs(premium), 1)}`}
                     </td>
                     <td>
                       <Badge tone="success" dot>Procesado</Badge>
@@ -293,7 +352,10 @@ export function ReportsPage() {
         )}
         <div className="table-footnote">
           <span>
-            <Sparkles size={13} /> {combined.length} informes · datos demo + análisis locales
+            <Sparkles size={13} /> {combined.length} informes ·{' '}
+            {API_RUNTIME.mock
+              ? 'datos demo + análisis locales'
+              : 'localStorage + GET /api/inference-results'}
           </span>
           <span>Exportable calculado por visión artificial</span>
         </div>
