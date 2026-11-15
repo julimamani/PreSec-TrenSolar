@@ -54,7 +54,7 @@ export function AnalysisUploader({
   const inputId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<File | null>(null)
-  const [grain, setGrain] = useState<GrainType>('soja')
+  const [grain] = useState<GrainType>('poroto')
   const [variety, setVariety] = useState('')
   const [batchId, setBatchId] = useState('')
   const [dragging, setDragging] = useState(false)
@@ -184,7 +184,7 @@ export function AnalysisUploader({
             Tipo de grano
           </span>
           <div
-            className="grain-selector"
+            className="grain-selector grain-selector--locked"
             role="radiogroup"
             aria-labelledby={`${inputId}-grain-label`}
           >
@@ -197,8 +197,7 @@ export function AnalysisUploader({
                   className={cn('grain-option', grain === grainId && 'is-active')}
                   role="radio"
                   aria-checked={grain === grainId}
-                  disabled={isBusy}
-                  onClick={() => setGrain(grainId)}
+                  disabled
                 >
                   <span className="grain-option__dot" style={{ backgroundColor: meta.color }} />
                   <span>{meta.name}</span>
@@ -207,6 +206,7 @@ export function AnalysisUploader({
               )
             })}
           </div>
+          <span className="field__hint">Por ahora el análisis está habilitado solo para poroto.</span>
         </div>
 
         {!API_RUNTIME.mock && (

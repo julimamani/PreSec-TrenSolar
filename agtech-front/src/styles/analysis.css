@@ -263,6 +263,10 @@
   color: var(--accent);
 }
 
+.grain-selector--locked .grain-option:disabled:not(.is-active) {
+  opacity: 0.5;
+}
+
 .uploader__row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
