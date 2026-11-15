@@ -1,3 +1,11 @@
+/**
+ * MarketTicker.tsx
+ *
+ * Componente que muestra un ticker/cinta de mercado con las pizarras de granos.
+ * Se actualiza automáticamente con los datos del hook useMarketData.
+ * muestra las cotizaciones de granos en tiempo real, incluyendo el precio y la variacion porcentual.
+ */
+
 import { useMarketData } from '../../hooks/useMarketData'
 import { formatNumber } from '../../lib/format'
 

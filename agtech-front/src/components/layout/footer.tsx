@@ -26,7 +26,7 @@ const Footer: React.FC = () => {
                 <a href="#" className="text-sm text-slate-400 hover:text-emerald-400 transition-colors">Características</a>
               </li>
               <li>
-                <a href="#" className="text-sm text-slate-400 hover:text-emerald-400 transition-colors">API para Plantas</a>
+                <a href="#" className="text-sm text-slate-400 hover:text-emerald-400 transition-colors">API para Granos</a>
               </li>
               <li>
                 <a href="#" className="text-sm text-slate-400 hover:text-emerald-400 transition-colors">Precios</a>

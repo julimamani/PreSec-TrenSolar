@@ -261,12 +261,15 @@ export function AnalysisResultView({
           <div className="defect-total">
             <span>Descarte total</span>
             <strong className="mono">{formatNumber(result.discardPercentage, 1)}%</strong>
-          </div>
-        </Card>
+          </div>       
+           </Card>
+      
 
         <Card className="result-view__attributes">
+
+          {/* Atributos del grano fisioquimicos, desabilitado debido a queno hay una carga de  resultadosd de laboratorio
           <PanelHeader
-            eyebrow="Análisis fisicoquímico"
+            eyebrow="Análisis fisicoquímico "
             title="Atributos del grano"
             action={
               <span className="attribute-legend">
@@ -304,6 +307,8 @@ export function AnalysisResultView({
               </tbody>
             </table>
           </div>
+          */}
+          
           <div className="result-view__attributes-footer">
             <span>
               <ShieldCheck size={14} aria-hidden="true" />

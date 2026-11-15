@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { cn } from '../../lib/format'
 
 interface LogoProps {
@@ -7,7 +8,8 @@ interface LogoProps {
 
 export function Logo({ compact = false, className }: LogoProps) {
   return (
-    <span className={cn('logo', compact && 'logo--compact', className)}>
+    <Link to="/">
+    <span  className={cn('logo', compact && 'logo--compact', className)}>
       <span className="logo__mark" aria-hidden="true">
         <svg viewBox="0 0 32 32" fill="none">
           <path
@@ -37,5 +39,7 @@ export function Logo({ compact = false, className }: LogoProps) {
         </span>
       )}
     </span>
+    </Link>
+    
   )
 }

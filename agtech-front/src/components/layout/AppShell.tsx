@@ -30,7 +30,8 @@ export function AppShell() {
           <Outlet />
         </main>
         <footer className="app-footer">
-          <span>PuroGrano Grain Intelligence · MVP AgTech 2026</span>
+          <span>PuroGrano Grain Intelligence · MVP TrenSolar 2026</span>
+          <span >·Jujuy Dev</span>
           <span>
             Precios de referencia de Matba Rofex y DolarAPI. No constituyen asesoramiento
             financiero.
