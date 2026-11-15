@@ -2,6 +2,7 @@ package com.app.agtech.service;
 
 import com.app.agtech.domain.entity.Batch;
 import com.app.agtech.domain.entity.Customer;
+import com.app.agtech.domain.enums.MarketGrain;
 import com.app.agtech.exception.ResourceNotFoundException;
 import com.app.agtech.repository.BatchRepository;
 import com.app.agtech.repository.CustomerRepository;
@@ -42,6 +43,7 @@ public class BatchService {
 
         Batch batch = Batch.builder()
                 .customer(customer)
+                .grain(resolveGrain(request.grain()))
                 .variety(request.variety())
                 .estimatedTons(request.estimatedTons())
                 .build();
@@ -55,6 +57,7 @@ public class BatchService {
         Customer customer = findCustomer(request.customerId());
 
         batch.setCustomer(customer);
+        batch.setGrain(resolveGrain(request.grain()));
         batch.setVariety(request.variety());
         batch.setEstimatedTons(request.estimatedTons());
 
@@ -64,6 +67,14 @@ public class BatchService {
     @Transactional
     public void delete(UUID id) {
         batchRepository.delete(findById(id));
+    }
+
+    private MarketGrain resolveGrain(String grain) {
+        // MVP: only poroto is analyzed; the request may omit it and it defaults.
+        if (grain == null || grain.isBlank()) {
+            return MarketGrain.POROTO;
+        }
+        return MarketGrain.fromId(grain.trim());
     }
 
     private Customer findCustomer(UUID customerId) {

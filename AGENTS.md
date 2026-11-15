@@ -9,7 +9,13 @@
 - Domain model lives in `agtech-backend/src/main/java/com/app/agtech/domain/` (`entity/` and `enums/`); repositories in `repository/`, business logic in `service/`, HTTP layer in `controller/` (package `com.app.agtech.web`), outbound integrations in `integration/`, and config in `config/`.
 - Vision AI client lives in `integration/VisionIAClientService.java`; its DTO is in `integration/dto/`.
 - CRUD endpoints exist for customers (`/api/customers`), batches (`/api/batches`) and inference results (`/api/inference-results`). Normal inference results are still created by the analysis flow, not the CRUD endpoint.
+<<<<<<< HEAD
+- MVP is poroto-only: `Batch.grain` (`MarketGrain`, defaults to `POROTO`, any other value is rejected with 400), `FinancialImpactRequest.grain` and the market snapshot are restricted to poroto. Soja/maíz/trigo stay in `MarketGrain`/`MatbaRofexClient` but are dormant — re-enable by adding grains back to `MarketDataService.MARKET_GRAINS`.
+- Export quality standards: `GET /api/export-standards[/{grain}]` exposes the Norma XVI – Anexo B (Res. 228/2021, Cámara Arbitral de Cereales) base/tolerance rubros bundled in `ExportStandardsService` (there is no public API for quality norms). `POST /api/export-standards/evaluate` and `GET /api/inference-results/{id}/export-evaluation` grade defect maps as OK / REBAJA / RECHAZO per rubro.
+- Poroto price: `CacPizarraClient` reads the Cámara Arbitral board price (ARS/t, `api.cac.pizarra-url`, tolerant JSON parse) and converts it with the mayorista rate; fallback is `app.market.poroto-spot-usd`.
+=======
 - Market endpoints: `GET /api/market-snapshot` (alias `/api/market/snapshot`) and `POST /api/financial/impact`. Market integration lives in `integration/MatbaRofexClient.java` and `integration/DolarApiClient.java`; orchestration is in `service/MarketDataService.java` and `service/FinancialAgentService.java`.
+>>>>>>> 0e670ae8c78af3b0456731605cc63b129ccf786f
 
 ## Toolchain
 

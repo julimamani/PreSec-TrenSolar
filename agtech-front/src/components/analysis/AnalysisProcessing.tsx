@@ -1,3 +1,10 @@
+/**
+ * AnalysisProcessing.tsx
+ *
+ * Componente que muestra el estado de procesamiento de la imagen de granos.
+ * Muestra un indicador de progreso, el estado actual y los pasos del pipeline de visión.
+ */
+
 import { Loader2, ScanLine } from 'lucide-react'
 import { cn } from '../../lib/format'
 import { Progress } from '../ui/Field'

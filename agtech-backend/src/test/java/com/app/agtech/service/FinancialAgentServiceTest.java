@@ -18,33 +18,33 @@ import static org.mockito.Mockito.when;
 class FinancialAgentServiceTest {
 
     @Test
-    void calculatesLossWithTheCachedGrainPriceAndExchangeRate() {
+    void calculatesLossWithTheCachedPorotoPriceAndExchangeRate() {
         MarketDataService marketDataService = mock(MarketDataService.class);
         when(marketDataService.getSnapshot()).thenReturn(snapshot());
 
         FinancialAgentService service = new FinancialAgentService(marketDataService, new BigDecimal("0.60"));
         FinancialImpactResponse response = service.calculateImpact(
-                new FinancialImpactRequest("soja", 10.0, 15.0, "global")
+                new FinancialImpactRequest("poroto", 10.0, 15.0, "rosario")
         );
 
-        assertEquals(0, new BigDecimal("405.00").compareTo(response.lossUsd()));
-        assertEquals(0, new BigDecimal("607500.00").compareTo(response.lossArs()));
-        assertEquals("Matba Rofex", response.source());
+        assertEquals(0, new BigDecimal("1125.00").compareTo(response.lossUsd()));
+        assertEquals(0, new BigDecimal("1687500.00").compareTo(response.lossArs()));
+        assertEquals("Cámara Arbitral pizarra", response.source());
     }
 
     @Test
-    void usesThePriceOfTheUploadedGrainOnly() {
+    void fallsBackToThePorotoQuoteWhenTheVenueDiffers() {
         MarketDataService marketDataService = mock(MarketDataService.class);
         when(marketDataService.getSnapshot()).thenReturn(snapshot());
 
         FinancialAgentService service = new FinancialAgentService(marketDataService, new BigDecimal("0.60"));
         FinancialImpactResponse response = service.calculateImpact(
-                new FinancialImpactRequest("maiz", 10.0, 15.0, "global")
+                new FinancialImpactRequest("poroto", 10.0, 15.0, "global")
         );
 
-        assertEquals(0, new BigDecimal("200.00").compareTo(response.priceUsdTon()));
-        assertEquals(0, new BigDecimal("180.00").compareTo(response.lossUsd()));
-        assertEquals(0, new BigDecimal("270000.00").compareTo(response.lossArs()));
+        assertEquals("rosario", response.venue());
+        assertEquals(0, new BigDecimal("1250.00").compareTo(response.priceUsdTon()));
+        assertEquals(0, new BigDecimal("1125.00").compareTo(response.lossUsd()));
     }
 
     private MarketSnapshotResponse snapshot() {
@@ -59,26 +59,15 @@ class FinancialAgentServiceTest {
                 BigDecimal.ZERO,
                 List.of(
                         new MarketQuoteResponse(
-                                "soja-global",
-                                "soja",
-                                "global",
-                                new BigDecimal("450.00"),
+                                "poroto-spot",
+                                "poroto",
+                                "rosario",
+                                new BigDecimal("1250.00"),
                                 BigDecimal.ZERO,
                                 BigDecimal.ZERO,
                                 BigDecimal.ZERO,
                                 now,
-                                "Matba Rofex"
-                        ),
-                        new MarketQuoteResponse(
-                                "maiz-global",
-                                "maiz",
-                                "global",
-                                new BigDecimal("200.00"),
-                                BigDecimal.ZERO,
-                                BigDecimal.ZERO,
-                                BigDecimal.ZERO,
-                                now,
-                                "Matba Rofex"
+                                "Cámara Arbitral pizarra"
                         )
                 ),
                 List.of(),

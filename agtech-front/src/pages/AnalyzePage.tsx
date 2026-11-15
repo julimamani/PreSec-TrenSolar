@@ -127,7 +127,7 @@ export function AnalyzePage() {
             <AnalysisPlaceholder />
           )}
 
-          <Card className="analyze-tips">
+          <Card className="analyze-tips flex-1" >
             <PanelHeader
               eyebrow="Buenas prácticas"
               title="Para una inferencia precisa"

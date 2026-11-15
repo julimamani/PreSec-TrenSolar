@@ -1,8 +1,11 @@
 package com.app.agtech.domain.entity;
 
+import com.app.agtech.domain.enums.MarketGrain;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -44,6 +47,11 @@ public class Batch {
     @EqualsAndHashCode.Include
     @ToString.Include
     private UUID id;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "grain", nullable = false, length = 20)
+    @Builder.Default
+    private MarketGrain grain = MarketGrain.POROTO;
 
     @Column(name = "variety", nullable = false, length = 100)
     private String variety;

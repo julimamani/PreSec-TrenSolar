@@ -1,3 +1,8 @@
+/**
+ * Landing page with hero, analysis uploader, flow steps, features, market chart, and footer.
+ * Uses hooks for analysis and market data, and renders various components for UI.
+ */
+
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
@@ -34,6 +39,9 @@ import { useMarketData } from '../hooks/useMarketData'
 import { formatNumber, formatTons, formatUsd } from '../lib/format'
 import type { PriceRange } from '../types/market'
 
+/**
+ * Flow steps for the landing page,  iteractive image 3d, each with a number, title, description, metric, and icon.
+ */
 const FLOW_STEPS = [
   {
     number: '01',
@@ -71,7 +79,7 @@ const FEATURES = [
     eyebrow: 'Computer vision',
     title: 'Calidad objetiva, no estimada a ojo',
     description:
-      'Detección de granos quebrados, dañados, materia extraña y atributos fisicoquímicos sobre una foto del lote.',
+      'Detección de granos quebrados, dañados, materia extraña y atributos cualitativos sobre una foto del lote.',
   },
   {
     icon: ChartNoAxesCombined,

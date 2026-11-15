@@ -79,6 +79,7 @@ class CrudControllersIntegrationTest {
                                 """.formatted(customerId)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.customerId").value(customerId))
+                .andExpect(jsonPath("$.grain").value("poroto"))
                 .andReturn();
 
         String batchId = JsonPath.parse(batchResult.getResponse().getContentAsString())
@@ -139,6 +140,37 @@ class CrudControllersIntegrationTest {
 
         mockMvc.perform(delete("/api/inference-results/{id}", inferenceResultId))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void rejectsNonPorotoBatchesInTheMvp() throws Exception {
+        MvcResult customerResult = mockMvc.perform(post("/api/customers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "businessName": "Acopio Sojero",
+                                  "taxId": "TAX-002",
+                                  "subscriptionPlan": "BASIC"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String customerId = JsonPath.parse(customerResult.getResponse().getContentAsString())
+                .read("$.id", String.class);
+
+        mockMvc.perform(post("/api/batches")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "customerId": "%s",
+                                  "grain": "soja",
+                                  "variety": "DM 53i53",
+                                  "estimatedTons": 40.0
+                                }
+                                """.formatted(customerId)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.grain").exists());
     }
 
     @Test

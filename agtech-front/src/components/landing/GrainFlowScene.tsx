@@ -1,3 +1,10 @@
+/**
+ * GrainFlowScene.tsx
+ *
+ * Escena isométrica del flujo del grano, desde el camión hasta el empaquetado.
+ * del dashboard de trazabilidad. Se puede interactuar con la escena para ver cada estación y su información.
+ */
+
 import { useState } from 'react'
 import type { MouseEvent } from 'react'
 import { Boxes, Cpu, ScanLine, Truck } from 'lucide-react'

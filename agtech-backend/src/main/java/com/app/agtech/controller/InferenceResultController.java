@@ -1,10 +1,18 @@
 package com.app.agtech.controller;
 
 import com.app.agtech.domain.entity.InferenceResult;
+import com.app.agtech.service.ExportStandardsService;
 import com.app.agtech.service.InferenceResultService;
+<<<<<<< HEAD:agtech-backend/src/main/java/com/app/agtech/web/InferenceResultController.java
+import com.app.agtech.web.dto.ExportEvaluationResponse;
+import com.app.agtech.web.dto.InferenceResultDetailResponse;
+import com.app.agtech.web.dto.InferenceResultRequest;
+import com.app.agtech.web.dto.InferenceResultUpdateRequest;
+=======
 import com.app.agtech.controller.dto.InferenceResultDetailResponse;
 import com.app.agtech.controller.dto.InferenceResultRequest;
 import com.app.agtech.controller.dto.InferenceResultUpdateRequest;
+>>>>>>> 0e670ae8c78af3b0456731605cc63b129ccf786f:agtech-backend/src/main/java/com/app/agtech/controller/InferenceResultController.java
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -25,9 +33,14 @@ import java.util.UUID;
 public class InferenceResultController {
 
     private final InferenceResultService inferenceResultService;
+    private final ExportStandardsService exportStandardsService;
 
-    public InferenceResultController(InferenceResultService inferenceResultService) {
+    public InferenceResultController(
+            InferenceResultService inferenceResultService,
+            ExportStandardsService exportStandardsService
+    ) {
         this.inferenceResultService = inferenceResultService;
+        this.exportStandardsService = exportStandardsService;
     }
 
     @GetMapping
@@ -40,6 +53,11 @@ public class InferenceResultController {
     @GetMapping("/{id}")
     public InferenceResultDetailResponse findById(@PathVariable UUID id) {
         return InferenceResultDetailResponse.from(inferenceResultService.findById(id));
+    }
+
+    @GetMapping("/{id}/export-evaluation")
+    public ExportEvaluationResponse exportEvaluation(@PathVariable UUID id) {
+        return exportStandardsService.evaluate(inferenceResultService.findById(id));
     }
 
     @GetMapping("/by-sample-analysis/{sampleAnalysisId}")
