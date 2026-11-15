@@ -1,0 +1,42 @@
+# Blueprint de Render para PreSec-TrenSolar.
+# Render Dashboard -> New -> Blueprint -> seleccionar este repo.
+#
+# Ojo: los servicios free se duermen tras ~15 min sin tráfico y los cold starts
+# pueden tardar ~1 min. La base de datos es H2 en memoria: los datos se pierden
+# en cada redeploy/restart.
+
+services:
+  - type: web
+    name: presec-vision
+    runtime: docker
+    plan: free
+    rootDir: vision-service
+    dockerfilePath: ./vision-service/Dockerfile
+    dockerContext: ./vision-service
+    healthCheckPath: /health
+    envVars:
+      - key: MOCK_MODE
+        value: "false"
+      # URL pública de este mismo servicio (se usa para armar heatmap_image_url).
+      # Si Render asigna otro subdominio, actualizar este valor y VISION_AI_BASE_URL.
+      - key: PUBLIC_BASE_URL
+        value: https://presec-vision.onrender.com
+
+  - type: web
+    name: presec-backend
+    runtime: docker
+    plan: free
+    rootDir: agtech-backend
+    dockerfilePath: ./agtech-backend/Dockerfile
+    dockerContext: ./agtech-backend
+    envVars:
+      # H2 en memoria: no requiere base de datos externa.
+      - key: SPRING_PROFILES_ACTIVE
+        value: h2
+      # Origen del frontend en Vercel (cubre previews *.vercel.app).
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://*.vercel.app
+      - key: VISION_AI_BASE_URL
+        value: https://presec-vision.onrender.com
+      - key: FILE_STORAGE_LOCATION
+        value: /app/uploads
