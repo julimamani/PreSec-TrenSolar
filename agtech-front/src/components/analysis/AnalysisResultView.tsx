@@ -12,30 +12,13 @@ import {
 } from 'lucide-react'
 import { API_RUNTIME } from '../../api/analysisApi'
 import { formatDateTime, formatNumber, formatSignedUsd, formatUsd } from '../../lib/format'
-import type { AnalysisResult, QualityAttribute } from '../../types/analysis'
+import type { AnalysisResult } from '../../types/analysis'
 import { QualityGauge } from '../charts/QualityGauge'
 import { QualityRadar } from '../charts/QualityRadar'
 import { Badge } from '../ui/Badge'
 import { Button, buttonClass } from '../ui/Button'
 import { Card, PanelHeader } from '../ui/Card'
 import { Progress } from '../ui/Field'
-
-function statusTone(status: QualityAttribute['status']) {
-  if (status === 'optimal') return 'success' as const
-  if (status === 'watch') return 'warning' as const
-  return 'danger' as const
-}
-
-function statusLabel(status: QualityAttribute['status']) {
-  if (status === 'optimal') return 'Óptimo'
-  if (status === 'watch') return 'Atención'
-  return 'Fuera de rango'
-}
-
-function attributeValue(attribute: QualityAttribute) {
-  const separator = attribute.unit === '%' ? '' : ' '
-  return `${formatNumber(attribute.value, 1)}${separator}${attribute.unit}`
-}
 
 function downloadJson(result: AnalysisResult) {
   const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' })
@@ -300,65 +283,11 @@ export function AnalysisResultView({
       
 
         <Card className="result-view__attributes">
-
-          {/* Atributos del grano fisioquimicos, desabilitado debido a queno hay una carga de  resultadosd de laboratorio
-          <PanelHeader
-            eyebrow="Análisis fisicoquímico "
-            title="Atributos del grano"
-            action={
-              <span className="attribute-legend">
-                <span><i className="dot dot--ok" /> Óptimo</span>
-                <span><i className="dot dot--warn" /> Atención</span>
-              </span>
-            }
-          />
-          {result.attributes.length > 0 ? (
-            <div className="data-table-wrap">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Atributo</th>
-                    <th>Muestra</th>
-                    <th>Referencia</th>
-                    <th>Estado</th>
-                  </tr>
-<<<<<<< HEAD
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {/*
+            Atributos fisicoquímicos deshabilitados: el backend todavía no
+            persiste resultados de laboratorio. Se conserva el footer de
+            trazabilidad.
           */}
-          
-=======
-                </thead>
-                <tbody>
-                  {result.attributes.map((attribute) => (
-                    <tr key={attribute.id}>
-                      <td>{attribute.label}</td>
-                      <td className="mono">{attributeValue(attribute)}</td>
-                      <td className="mono muted">
-                        {formatNumber(attribute.benchmark, 1)}
-                        {attribute.unit === '%' ? '%' : ` ${attribute.unit}`}
-                      </td>
-                      <td>
-                        <Badge tone={statusTone(attribute.status)}>
-                          {statusLabel(attribute.status)}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="table-empty">
-              <span>
-                El backend no persiste atributos fisicoquímicos; solo devuelve el
-                rendimiento exportable y los defectos detectados.
-              </span>
-            </div>
-          )}
->>>>>>> 0e670ae8c78af3b0456731605cc63b129ccf786f
           <div className="result-view__attributes-footer">
             <span>
               <ShieldCheck size={14} aria-hidden="true" />
